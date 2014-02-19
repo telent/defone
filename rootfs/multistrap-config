@@ -1,14 +1,13 @@
 [General]
 arch=armhf
 directory=/home/dan/src/defone/rootfs/build
-retainsources=/home/dan/src/defone/rootfs/
+retainsources=/home/dan/src/defone/rootfs/dpkg
 unpack=true
-bootstrap=Grip
+debootstrap=Grip Debian
 aptsources=Grip Debian
-packages=dropbear
 
 [Grip]
-packages=ntpdate udev lrzsz netcat telnetd
+packages=ntpdate netcat bash dropbear less
 source=http://loaclhost:3142/www.emdebian.org/grip
 keyring=emdebian-archive-keyring
 suite=wheezy-grip

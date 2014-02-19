@@ -2,13 +2,14 @@ TOP=$(shell pwd)
 R=$(TOP)/build
 
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
- $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/start.rc $(R)/lib/android
+ $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/start.rc $(R)/lib/android \
+ $(TOP)/dpkg
 
-$(R)/lib/android:
+$(R)/lib/android $(TOP)/dpkg:
 	mkdir $@
 
-$(R)/etc/shells:
-	multistrap -f multistrap.config
+$(R)/etc/shells: multistrap-config
+	multistrap -f multistrap-config
 
 $(R)/start.rc: $(TOP)/start.rc
 	cp $< $@
@@ -27,11 +28,13 @@ $(R)/etc/dropbear/dropbear_rsa_host_key:
 	$(TOP)/bin/dropbearkey -t rsa -f $@
 
 sync: setup
-	rsync -av build/ rsync://root@localhost:8873/root 
+	rsync --exclude /lib/android -av build/ rsync://root@localhost:8873/root 
+	adb shell "sh /data/debian/start.rc"
 
 setup:
 	adb shell "mkdir -p /data/debian"
 	adb push rsync.conf /data/debian/rsync.conf
+	adb push start.rc /data/debian/start.rc
 	adb shell "rsync --daemon --port=8873 --config=/data/debian/rsync.conf"
 	adb forward tcp:8873 tcp:8873
 
