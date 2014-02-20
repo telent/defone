@@ -32,11 +32,13 @@ sync: setup
 	adb shell "sh /data/debian/start.rc"
 
 setup:
+	adb root
 	adb shell "mkdir -p /data/debian"
 	adb push rsync.conf /data/debian/rsync.conf
 	adb push start.rc /data/debian/start.rc
 	adb shell "rsync --daemon --port=8873 --config=/data/debian/rsync.conf"
 	adb forward tcp:8873 tcp:8873
+	sleep 1 # time for rsync to start
 
 
 # shell "echo -e '[root]\n path=/data/debian' > /data/debian/rsync.conf"
