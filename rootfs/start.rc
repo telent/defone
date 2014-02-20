@@ -1,7 +1,11 @@
+set -ex
 test -a /data/debian/dev/zero || mount -o bind /dev /data/debian/dev
+grep -q /data/debian/dev/pts /proc/mounts ||  mount -o bind /dev/pts /data/debian/dev/pts
+test -a /data/debian/lib/android || mkdir -p /data/debian/lib/android 
 test -a /data/debian/lib/android/hw ||  mount -o bind /system/lib /data/debian/lib/android
 test -d /data/debian/proc/1 || mount -t proc /proc /data/debian/proc
 test -d /data/debian/sys/bus || mount -t sysfs /sys /data/debian/sys
 chroot /data/debian /bin/bash -c "PATH=/bin:/sbin:/usr/bin:/usr/sbin:$PATH  /var/lib/dpkg/info/dash.preinst install"
 chroot /data/debian /bin/bash -c "PATH=/bin:/sbin:/usr/bin:/usr/sbin:$PATH DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C  dpkg --configure -a"
-# PATH=/bin:/usr/bin:/sbin:/usr/sbin:$PATH
+chroot /data/debian /bin/sh -x /etc/init.d/dropbear start   
+# PATH=/bin:/usr/bin:/sbin:/usr/sbin:$PATH chroot /data/debian /bin/bash
