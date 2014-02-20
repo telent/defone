@@ -28,7 +28,7 @@ $(R)/etc/dropbear/dropbear_rsa_host_key:
 	$(TOP)/bin/dropbearkey -t rsa -f $@
 
 sync: setup
-	rsync --exclude /lib/android -av build/ rsync://root@localhost:8873/root 
+	rsync -u --exclude /lib/android -av build/ rsync://root@localhost:8873/root 
 	adb shell "sh /data/debian/start.rc"
 
 setup:
