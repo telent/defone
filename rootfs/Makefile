@@ -3,7 +3,8 @@ R=$(TOP)/build
 
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
  $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/start.rc $(R)/lib/android \
- $(TOP)/dpkg
+ $(TOP)/dpkg $(R)/home/dan/.ssh/authorized_keys
+
 
 $(R)/lib/android $(TOP)/dpkg:
 	mkdir $@
@@ -26,6 +27,10 @@ $(R)/etc/resolv.conf: /etc/resolv.conf
 $(R)/etc/dropbear/dropbear_rsa_host_key:
 	mkdir -p $(shell dirname $@)
 	$(TOP)/bin/dropbearkey -t rsa -f $@
+
+$(R)/home/dan/.ssh/authorized_keys: /home/dan/.ssh/id_dsa.pub
+	mkdir -p $(shell dirname $@)
+	cp $< $@
 
 sync: setup
 	rsync -u --exclude /lib/android -av build/ rsync://root@localhost:8873/root 
