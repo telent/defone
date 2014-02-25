@@ -12,9 +12,6 @@ $(R)/lib/android $(TOP)/dpkg:
 $(R)/etc/shells: multistrap-config
 	multistrap -f multistrap-config
 
-$(R)/start.rc: $(TOP)/start.rc
-	cp $< $@
-
 $(R)/etc/passwd: /etc/passwd
 	cp $< $@
 
@@ -41,6 +38,7 @@ setup:
 	adb shell "mkdir -p /data/debian"
 	adb push rsync.conf /data/debian/rsync.conf
 	adb push start.rc /data/debian/start.rc
+	adb push stop.rc /data/debian/stop.rc
 	adb shell "rsync --daemon --port=8873 --config=/data/debian/rsync.conf"
 	adb forward tcp:8873 tcp:8873
 	sleep 1 # time for rsync to start
