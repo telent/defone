@@ -1,6 +1,7 @@
 PATH:=/sbin:/usr/sbin:/usr/local/lib/android-sdk-linux/tools/:/usr/local/lib/android-sdk-linux/platform-tools/:$(PATH)
 TOP=$(shell pwd)
 R=$(TOP)/build
+http_proxy=http://loaclhost:3142/
 
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
  $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/start.rc $(R)/lib/android \

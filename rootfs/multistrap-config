@@ -7,12 +7,12 @@ debootstrap=Grip
 aptsources=Grip
 
 [Grip]
-packages=ntpdate netcat bash dropbear less build-essential
-source=http://loaclhost:3142/www.emdebian.org/grip
+packages=ntpdate netcat bash dropbear less build-essential gdb
+source=http://www.emdebian.org/grip
 keyring=emdebian-archive-keyring
 suite=wheezy-grip
 
 [Debian]
-source=http://loaclhost:3142/ftp.uk.debian.org/debian
+source=http://ftp.uk.debian.org/debian
 keyring=debian-archive-keyring
 suite=wheezy
