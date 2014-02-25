@@ -1,3 +1,4 @@
+PATH:=/sbin:/usr/sbin:/usr/local/lib/android-sdk-linux/tools/:/usr/local/lib/android-sdk-linux/platform-tools/:$(PATH)
 TOP=$(shell pwd)
 R=$(TOP)/build
 
