@@ -8,6 +8,9 @@ root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
  $(TOP)/dpkg $(R)/home/dan/.ssh/authorized_keys
 
 
+clean:
+	-rm -r $(R)
+
 $(R)/lib/android $(TOP)/dpkg:
 	mkdir $@
 
