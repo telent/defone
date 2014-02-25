@@ -43,6 +43,7 @@ setup:
 	adb push stop.rc /data/debian/stop.rc
 	adb shell "rsync --daemon --port=8873 --config=/data/debian/rsync.conf"
 	adb forward tcp:8873 tcp:8873
+	adb forward tcp:2222 tcp:22
 	sleep 1 # time for rsync to start
 
 
