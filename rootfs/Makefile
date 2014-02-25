@@ -4,8 +4,8 @@ R=$(TOP)/build
 http_proxy=http://loaclhost:3142/
 
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
- $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/start.rc $(R)/lib/android \
- $(TOP)/dpkg $(R)/home/dan/.ssh/authorized_keys
+ $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/lib/android \
+ $(TOP)/dpkg $(R)/root/.ssh/authorized_keys
 
 
 clean:
@@ -30,7 +30,7 @@ $(R)/etc/dropbear/dropbear_rsa_host_key:
 	mkdir -p $(shell dirname $@)
 	$(TOP)/bin/dropbearkey -t rsa -f $@
 
-$(R)/home/dan/.ssh/authorized_keys: /home/dan/.ssh/id_dsa.pub
+$(R)/root/.ssh/authorized_keys: /home/dan/.ssh/id_dsa.pub
 	mkdir -p $(shell dirname $@)
 	cp $< $@
 
