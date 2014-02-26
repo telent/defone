@@ -49,6 +49,13 @@ setup:
 	adb forward tcp:2222 tcp:22
 	sleep 1 # time for rsync to start
 
+stop:
+	adb shell "sh /data/debian/stop.rc"
+
+clean-device:
+	adb shell "rm -rf /data/debian"
+
+
 
 # shell "echo -e '[root]\n path=/data/debian' > /data/debian/rsync.conf"
 
