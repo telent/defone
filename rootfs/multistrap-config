@@ -7,7 +7,8 @@ debootstrap=Grip
 aptsources=Grip
 
 [Grip]
-packages=ntpdate netcat bash dropbear less build-essential gdb
+packages=ntpdate netcat bash dropbear less build-essential gdb iputils-ping x11proto-gl-dev pkg-config	libdrm2 libdrm-dev libdrm-omap1 x11proto-dri2-dev
+
 source=http://www.emdebian.org/grip
 keyring=emdebian-archive-keyring
 suite=wheezy-grip
