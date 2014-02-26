@@ -5,7 +5,8 @@ http_proxy=http://loaclhost:3142/
 
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
  $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/lib/android \
- $(TOP)/dpkg $(R)/root/.ssh/authorized_keys
+ $(TOP)/dpkg $(R)/root/.ssh/authorized_keys \
+ $(R)/root/src
 
 
 clean:
@@ -34,7 +35,11 @@ $(R)/root/.ssh/authorized_keys: /home/dan/.ssh/id_dsa.pub
 	mkdir -p $(shell dirname $@)
 	cp $< $@
 
-sync: setup
+$(R)/root/src: $(TOP)/../src
+	mkdir -p $(shell dirname $@)
+	cp -r $< $@
+
+sync: root setup
 	rsync -u --exclude /lib/android -av build/ rsync://root@localhost:8873/root 
 	adb shell "sh /data/debian/start.rc"
 
