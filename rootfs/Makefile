@@ -1,7 +1,7 @@
 PATH:=/sbin:/usr/sbin:/usr/local/lib/android-sdk-linux/tools/:/usr/local/lib/android-sdk-linux/platform-tools/:$(PATH)
 TOP=$(shell pwd)
 R=$(TOP)/build
-http_proxy=http://loaclhost:3142/
+http_proxy=http://loaclhost.lan:3142/
 
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
  $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/lib/android \
@@ -16,6 +16,7 @@ $(R)/lib/android $(TOP)/dpkg:
 	mkdir $@
 
 $(R)/etc/shells: multistrap-config
+	-mv $(R)/var/lib/dpkg/status $(R)/var/lib/dpkg/status.old
 	multistrap -f multistrap-config
 
 $(R)/etc/passwd: /etc/passwd
@@ -27,13 +28,9 @@ $(R)/etc/shadow: /etc/shadow
 $(R)/etc/resolv.conf: /etc/resolv.conf
 	cp $< $@
 
-$(R)/etc/dropbear/dropbear_rsa_host_key:
+$(R)/root/.ssh/authorized_keys:
 	mkdir -p $(shell dirname $@)
-	$(TOP)/bin/dropbearkey -t rsa -f $@
-
-$(R)/root/.ssh/authorized_keys: /home/dan/.ssh/id_dsa.pub
-	mkdir -p $(shell dirname $@)
-	cp $< $@
+	( ( cat $@ ; ssh-add -L ) | uniq > $$$$) && mv $$$$ $@
 
 $(R)/root/src: $(TOP)/../src
 	mkdir -p $(shell dirname $@)
@@ -49,10 +46,18 @@ setup:
 	adb push rsync.conf /data/debian/rsync.conf
 	adb push start.rc /data/debian/start.rc
 	adb push stop.rc /data/debian/stop.rc
-	adb shell "rsync --daemon --port=8873 --config=/data/debian/rsync.conf"
 	adb forward tcp:8873 tcp:8873
 	adb forward tcp:2222 tcp:22
+	adb shell "/data/debian/rsync.android --daemon --port=8873 --config=/data/debian/rsync.conf &"
 	sleep 1 # time for rsync to start
+
+all: sync invoke-stage2
+
+invoke-stage2:
+	ssh -p 2222 root@localhost make -C src stage2
+
+stage2:
+	@echo on-device stuffz
 
 stop:
 	adb shell "sh /data/debian/stop.rc"
@@ -61,6 +66,20 @@ clean-device:
 	adb shell "rm -rf /data/debian"
 
 
+busybox.android:
+	curl http://busybox.net/downloads/binaries/latest/busybox-armv7l -o $@
 
-# shell "echo -e '[root]\n path=/data/debian' > /data/debian/rsync.conf"
+# XXX rsync.android was extracted from a device after installing and
+# running rsync4android.apk.  I don't know its provenance any better
+# than that
 
+emulator: busybox.android
+	# this might ask if you want a custom profile.  seems to work
+	# fine if you say no
+	-android create avd -c 8000M -n defone1  -t 3 
+	adb -e shell id || HOME=/root emulator -partition-size 2048 -avd defone1 &
+	adb -e wait-for-device
+	adb -e remount
+	adb -e push rsync.android /data/debian/rsync.android
+	adb -e push busybox.android /data/debian/busybox.android
+	adb -e shell chmod 755 /data/debian/*.android
