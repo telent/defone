@@ -1,0 +1,159 @@
+-*- mode: Org; org-todo-keywords '((sequence "TODO" "DOING" "DONE"))
+
+(defone): "The Habitable Phone OS"
+
+* Intro
+
+Current phone operating systems that treat apps as monoliths.  The
+goal of this project is (eventually) to replace this with small
+general-purpose components which can be strung together according to
+user needs.  
+
+** How?
+
+Using CSP, which for the purpose of this discussion I will summarize
+as "like Unix pipes but on steroids".  CSP is about Communicating
+Sequential Processes, and the way they communicate is by being
+connected together with channels and passing messages on those
+channels.  
+
+** No, really, _how_?
+
+Take an Android phone, install a proper Linux distribution and 
+a Clojure installation on it, then write/join up components using
+core.async.  Input will be from RIL and the internet and tslib, 
+output will be via OpenGL(ES)
+
+*** Why Android?
+
+Mostly because it's there.  We piggyback on android to get the kernel
+and the drivers for stuff like RIL (the radio/telephony) and wireless
+and audio and bluetooth.  We ignore (maybe even delete, eventually)
+all the Dalvik stuff.
+
+*** Why not Clojure-on-Dalvik?
+
+No particularly strong reason except that (1) dynamic compilation
+looks complicated, (2) putting our own real Linux on instead gives us
+a degree of future-proofing by making it more portable
+
+- there are other Linux-based phones that aren't Android or have only
+  vestigial Android (Firefox OS, Ubuntu Touch)
+
+- there are ARM Linux devices that aren't even phones (Raspberry Pi
+  being the obvious one, plus Sheevaplugs and all that stuff)
+
+The biggest downside of doing it this way is that we don't get Android
+accelerated display drivers.
+
+*** Why not start with B2G/Firefox OS?
+
+Because I tried building it for my device (Galaxy Nexus) and sheesh is
+it complicated.  Modularity FTW: if we can run (defone) on any
+powerful-enough hardware that runs a rooted Android, that gives us
+many more potential target hardware devices.
+
+* Current status / TODO
+
+(Very) rough, (not at all) ready.
+
+** chroot (Debian)
+
+I've built a chroot with Debian in it and some make targets to get it
+onto my phone (may require the phone is running cyanogenmod).
+
+See `rootfs/` and in particular `rootfs/Makefile`
+
+_If you can get it to work_ them among the other things it does is start
+an ssh server (drpbear).  You can connect to your phone over ssh as
+root, using whatever key you had in your ssh agent when you invoked
+make.
+
+** graphics (Mesa)
+
+I spent a good while chasing down various rabbit holes in the hope of
+getting hw-accelerated GL on my particular phone (Galaxy Nexus).
+Eventually I wrote that off as an exercise for Future Me and just
+built Mesa instead
+
+apt-get install python python-libxml2 x11proto-gl-dev pkg-config
+ libdrm2 libdrm-dev libdrm-omap1 x11proto-dri2-dev autoconf automake
+ libtool autotools-dev vim-tiny curl strace bison bison flex gettext
+ gettext libxml2-dev libexpat1-dev llvm-3.1-dev
+
+./configure --disable-xlib-glx --enable-gles1 --enable-gles2
+ --disable-glx
+ --with-egl-platforms=fbdev --disable-xvmc
+ --with-gallium-drivers=swrast --enable-gallium-llvm
+ --enable-gallium-egl --enable-shared-glapi --enable-dri 
+ --with-dri-drivers=swrast
+
+This doesn't seem to be any faster with llvmpipe than with the
+softpipe, but that could easily be because I haven't figured out how
+to enable llvmpipe properly
+
+root@localhost:~/src# EGL_PLATFORM=fbdev GALLIUM_DRIVER=llvmpipe 
+ LD_LIBRARY_PATH=/usr/local/lib EGL_LOG_LEVEL=debug  ./eglinfo
+libEGL debug: Native platform type: fbdev (environment overwrite)
+libEGL debug: EGL search path is /usr/local/lib/egl
+libEGL debug: added /usr/local/lib/egl/egl_gallium.so to module array
+libEGL debug: added egl_dri2 to module array
+libEGL debug: dlopen(/usr/local/lib/egl/egl_gallium.so)
+libEGL info: use FBDEV for display 0x3
+libEGL debug: the best driver is Gallium
+EGL API version: 1.4
+EGL vendor string: Mesa Project
+EGL version string: 1.4 (Gallium)
+EGL client APIs: OpenGL OpenGL_ES OpenGL_ES2 
+EGL extensions string:
+    EGL_MESA_screen_surface EGL_KHR_image_base EGL_KHR_reusable_sync
+    EGL_KHR_fence_sync EGL_KHR_surfaceless_context
+Configurations:
+     bf lv colorbuffer dp st  ms    vis   cav bi  renderable  supported
+  id sz  l  r  g  b  a th cl ns b    id   eat nd gl es es2 vg surfaces 
+---------------------------------------------------------------------
+0x01 32  0  8  8  8  8  0  0  0 0 0x00SG      a  y  y  y     win,pb,scrn
+0x02 32  0  8  8  8  8 16  0  0 0 0x00SG      a  y  y  y     win,pb,scrn
+0x03 32  0  8  8  8  8 32  0  0 0 0x00SG      a  y  y  y     win,pb,scrn
+0x04 32  0  8  8  8  8 24  8  0 0 0x00SG      a  y  y  y     win,pb,scrn
+0x05 32  0  8  8  8  8 24  0  0 0 0x00SG      a  y  y  y     win,pb,scrn
+Number of Screens: 1
+
+Screen 0 Modes:
+  id  width height refresh  name
+-----------------------------------------
+0x01   720   1280   60.000  Current Mode
+
+** JDK, Clojure : TO DO NEXT
+
+Haven't even installed these yet.
+
+** Standalone hacking
+
+It is a goal that we can develop directly on the device without being
+dependent on some other machine with an SDK/special software installed.
+Since we have no plans currently to support programming without a
+keyboard, we will at least be dependent on being able to connect a
+keyboard or a device that has one attached
+
+As noted previously, there is ssh which works fine with Emacs
+Tramp.  Unfortunately, not every computer in the world has emacs
+installed: eventually we may want to install a web server and shellinabox
+or something like that.
+
+http://code.google.com/p/shellinabox/
+
+** Audio IO
+
+ALSA is standard Linux stuff.  Need to find out if channels are good
+for bulk audio data (maybe in 8k blocks or something) or if they
+would be best reserved for siganlling and let the actual audio happen
+out of bound.
+
+** Telephony
+
+RIL looks at least semi-documented.  Write some stuff to channelise it
+
+** IP Networking
+   
+Android handles this, no need to get involved
