@@ -2,10 +2,11 @@
 
 ACLOCAL=aclocal -I/usr/share/aclocal -I/usr/local/share/aclocal
 export ACLOCAL
+PATH:=/usr/local/bin:$(PATH)
 
 APT=PATH=/sbin:/usr/sbin:$$PATH apt-get install
 
-all: mesa
+all: /usr/local/lib/libGLESv2.la /usr/bin/java /usr/local/bin/lein
 
 download = curl $(1) -o $@
 
@@ -24,7 +25,6 @@ download = curl $(1) -o $@
 	$(call download, https://raw.github.com/technomancy/leiningen/stable/bin/lein)
 	chmod 755 $@
 
-
 Mesa-10.0.3.tar.bz2: /usr/bin/curl
 	$(call download, ftp://ftp.freedesktop.org/pub/mesa/10.0.3/MesaLib-10.0.3.tar.bz2)
 
@@ -34,15 +34,16 @@ automake-1.14.tar.xz: /usr/bin/curl
 /usr/local/bin/automake: automake-1.14.tar.xz
 	tar xf $< && cd automake-1.14 && ./configure && make install
 
-Mesa-10.0.3: Mesa-10.0.3.tar.bz2
+Mesa-10.0.3/unpack-stamp: Mesa-10.0.3.tar.bz2
 	tar jxf $<
+	touch $@
 
 # XXX if this fails with an error about aclocal 1.14 not found, run it
 # again.  This is probably because it doesn't detect an automake
 # installed in the same run of make, or something like that
 
-Mesa-10.0.3/config.log: Mesa-10.0.3 /usr/local/bin/automake
-	cd $< &&  ./configure --disable-xlib-glx \
+Mesa-10.0.3/config.status: Mesa-10.0.3/unpack-stamp /usr/local/bin/automake
+	cd `dirname $<` &&  ./configure --disable-xlib-glx \
 	--enable-gles1 --enable-gles2 \
 	 --disable-glx \
 	 --with-egl-platforms=fbdev --disable-xvmc \
@@ -50,6 +51,6 @@ Mesa-10.0.3/config.log: Mesa-10.0.3 /usr/local/bin/automake
 	 --enable-gallium-egl --enable-shared-glapi --enable-dri  \
 	 --with-dri-drivers=swrast 
 
-mesa: Mesa-10.0.3/config.log 
+/usr/local/lib/libGLESv2.la: Mesa-10.0.3/config.status
 	make -C `dirname $<` install
 
