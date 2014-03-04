@@ -61,7 +61,7 @@ all: sync invoke-stage2
 
 copy-stage2: setup
 	ssh -A -p2222 root@localhost mkdir -p /defone
-	cd $(PARENT) && git ls-files |rsync --files-from=- . rsync://root@localhost:8873/root/defone 
+	cd $(PARENT) && ( git ls-files && echo .git ) |rsync -u -r -v --files-from=- . rsync://root@localhost:8873/root/defone 
 
 
 stage2:
