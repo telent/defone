@@ -301,10 +301,7 @@ init(int width, int height)
    glTranslatef(0.0, 0.0, -10.0);
 }
 
-int
-main(int argc, char **argv)
-{
-   const char fbdev[] = "/dev/graphics/fb0";
+int cljegl_start(char *fbdev) {
    struct fb_var_screeninfo vinfo;
    int fd, tty_err, frame;
 
@@ -323,16 +320,30 @@ main(int argc, char **argv)
    tty_err = tty_open();
 
    init(vinfo.xres, vinfo.yres);
-   for (frame = 0; frame <= 180; frame++) {
-      draw(frame);
-      egl_present();
-   }
+   return fd;
+}
 
-   if (!tty_err)
-      tty_close();
+void cljegl_stop(int fd) {
+    tty_close();
+    
+    egl_destroy();
+    close(fd);
+}
 
-   egl_destroy();
-   close(fd);
 
-   return 0;
+int
+main(int argc, char **argv)
+{
+    char fbdev[] = "/dev/graphics/fb0";
+    struct fb_var_screeninfo vinfo;
+    int fd, frame;
+    fd = cljegl_start(fbdev);
+    
+    for (frame = 0; frame <= 180; frame++) {
+	draw(frame);
+	egl_present();
+    }
+    cljegl_stop(fd);
+    
+    return 0;
 }
