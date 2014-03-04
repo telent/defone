@@ -20,8 +20,10 @@ download = curl $(1) -o $@
 	-groupadd messagebus 
 	$(APT) openjdk-7-jdk
 
-lein: /usr/bin/java
+/usr/local/bin/lein: /usr/bin/java
 	$(call download, https://raw.github.com/technomancy/leiningen/stable/bin/lein)
+	chmod 755 $@
+
 
 Mesa-10.0.3.tar.bz2: /usr/bin/curl
 	$(call download, ftp://ftp.freedesktop.org/pub/mesa/10.0.3/MesaLib-10.0.3.tar.bz2)
