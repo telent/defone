@@ -57,14 +57,14 @@ setup: busybox.android rsync.android
 	adb shell "/data/debian/rsync.android --daemon --port=8873 --config=/data/debian/rsync.conf &"
 	sleep 1 # time for rsync to start
 
-all: sync invoke-stage2
+all: sync stage2
 
 copy-stage2: setup
 	ssh -A -p2222 root@localhost mkdir -p /defone
 	cd $(PARENT) && ( git ls-files && echo .git ) |rsync -u -r -v --files-from=- . rsync://root@localhost:8873/root/defone 
 
 
-stage2:
+stage2: copy-stage2
 	ssh -p 2222 root@localhost make -C /defone/stage2
 
 
