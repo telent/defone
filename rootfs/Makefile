@@ -64,11 +64,9 @@ copy-stage2: setup
 	cd $(PARENT) && git ls-files |rsync --files-from=- . rsync://root@localhost:8873/root/defone 
 
 
-invoke-stage2:
+stage2:
 	ssh -p 2222 root@localhost make -C /defone/stage2
 
-stage2:
-	@echo on-device stuffz
 
 stop:
 	adb shell "sh /data/debian/stop.rc"
