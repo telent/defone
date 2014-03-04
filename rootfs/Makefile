@@ -4,6 +4,8 @@ PARENT=$(shell cd .. && /bin/pwd)
 R=$(TOP)/build
 http_proxy=http://loaclhost.lan:3142/
 
+default: all
+
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
  $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/lib/android \
  $(TOP)/dpkg $(R)/root/.ssh/authorized_keys 
@@ -40,12 +42,16 @@ sync: root setup
 	rsync -u --exclude /lib/android -av build/ rsync://root@localhost:8873/root 
 	adb shell "sh /data/debian/start.rc"
 
-setup:
+setup: busybox.android rsync.android
 	adb root
 	adb shell "mkdir -p /data/debian"
 	adb push rsync.conf /data/debian/rsync.conf
 	adb push start.rc /data/debian/start.rc
 	adb push stop.rc /data/debian/stop.rc
+	adb  remount
+	adb  push rsync.android /data/debian/rsync.android
+	adb  push busybox.android /data/debian/busybox.android
+	adb  shell chmod 755 /data/debian/*.android
 	adb forward tcp:8873 tcp:8873
 	adb forward tcp:2222 tcp:22
 	adb shell "/data/debian/rsync.android --daemon --port=8873 --config=/data/debian/rsync.conf &"
@@ -84,7 +90,3 @@ emulator: busybox.android
 	-android create avd -n defone  -t 3 
 	adb -e shell id || (HOME=/root emulator -partition-size 2048 -avd defone ) &
 	adb -e wait-for-device
-	adb -e remount
-	adb -e push rsync.android /data/debian/rsync.android
-	adb -e push busybox.android /data/debian/busybox.android
-	adb -e shell chmod 755 /data/debian/*.android
