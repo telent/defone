@@ -35,8 +35,12 @@ automake-1.14.tar.xz: /usr/bin/curl
 Mesa-10.0.3: Mesa-10.0.3.tar.bz2
 	tar jxf $<
 
+# XXX if this fails with an error about aclocal 1.14 not found, run it
+# again.  This is probably because it doesn't detect an automake
+# installed in the same run of make, or something like that
+
 mesa: Mesa-10.0.3 /usr/local/bin/automake
-	cd $< && ./autogen.sh && ./configure --disable-xlib-glx \
+	cd $< &&  ./configure --disable-xlib-glx \
 	--enable-gles1 --enable-gles2 \
 	 --disable-glx \
 	 --with-egl-platforms=fbdev --disable-xvmc \
