@@ -41,13 +41,15 @@ Mesa-10.0.3: Mesa-10.0.3.tar.bz2
 # again.  This is probably because it doesn't detect an automake
 # installed in the same run of make, or something like that
 
-mesa: Mesa-10.0.3 /usr/local/bin/automake
+Mesa-10.0.3/config.log: Mesa-10.0.3 /usr/local/bin/automake
 	cd $< &&  ./configure --disable-xlib-glx \
 	--enable-gles1 --enable-gles2 \
 	 --disable-glx \
 	 --with-egl-platforms=fbdev --disable-xvmc \
 	 --with-gallium-drivers=swrast --enable-gallium-llvm \
 	 --enable-gallium-egl --enable-shared-glapi --enable-dri  \
-	 --with-dri-drivers=swrast \
-	&& make
+	 --with-dri-drivers=swrast 
+
+mesa: Mesa-10.0.3/config.log 
+	make -C `dirname $<` install
 
