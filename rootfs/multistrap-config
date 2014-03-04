@@ -4,7 +4,7 @@ directory=/home/dan/src/defone/rootfs/build
 retainsources=/home/dan/src/defone/rootfs/dpkg
 unpack=true
 debootstrap=Grip
-aptsources=Grip
+aptsources=Grip Debian
 
 [Grip]
 packages=ntpdate netcat bash dropbear less build-essential gdb iputils-ping x11proto-gl-dev pkg-config	libdrm2 libdrm-dev libdrm-omap1 x11proto-dri2-dev

@@ -1,12 +1,12 @@
 PATH:=/sbin:/usr/sbin:/usr/local/lib/android-sdk-linux/tools/:/usr/local/lib/android-sdk-linux/platform-tools/:$(PATH)
 TOP=$(shell pwd)
+PARENT=$(shell cd .. && /bin/pwd)
 R=$(TOP)/build
 http_proxy=http://loaclhost.lan:3142/
 
 root: $(R)/etc/shells $(R)/etc/passwd $(R)/etc/shadow $(R)/etc/resolv.conf \
  $(R)/etc/dropbear/dropbear_rsa_host_key $(R)/lib/android \
- $(TOP)/dpkg $(R)/root/.ssh/authorized_keys \
- $(R)/root/src
+ $(TOP)/dpkg $(R)/root/.ssh/authorized_keys 
 
 
 clean:
@@ -53,8 +53,13 @@ setup:
 
 all: sync invoke-stage2
 
+copy-stage2: setup
+	ssh -A -p2222 root@localhost mkdir -p /defone
+	cd $(PARENT) && git ls-files |rsync --files-from=- . rsync://root@localhost:8873/root/defone 
+
+
 invoke-stage2:
-	ssh -p 2222 root@localhost make -C src stage2
+	ssh -p 2222 root@localhost make -C /defone/stage2
 
 stage2:
 	@echo on-device stuffz
@@ -76,8 +81,8 @@ busybox.android:
 emulator: busybox.android
 	# this might ask if you want a custom profile.  seems to work
 	# fine if you say no
-	-android create avd -c 8000M -n defone1  -t 3 
-	adb -e shell id || HOME=/root emulator -partition-size 2048 -avd defone1 &
+	-android create avd -n defone  -t 3 
+	adb -e shell id || (HOME=/root emulator -partition-size 2048 -avd defone ) &
 	adb -e wait-for-device
 	adb -e remount
 	adb -e push rsync.android /data/debian/rsync.android
