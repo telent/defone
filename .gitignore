@@ -2,3 +2,7 @@ rootfs/build
 rootfs/dpkg
 *~
 rootfs/*.android
+stage2/Mesa-10.0.3.tar.bz2
+stage2/Mesa-10.0.3
+stage2/automake-1.14
+stage2/automake-1.14.tar.xz
