@@ -43,8 +43,8 @@ a degree of future-proofing by making it more portable
 - there are ARM Linux devices that aren't even phones (Raspberry Pi
   being the obvious one, plus Sheevaplugs and all that stuff)
 
-The biggest downside of doing it this way is that we don't get Android
-accelerated display drivers.
+The biggest downside of doing it this way, at least that I have so
+far noted, is that we don't get Android accelerated display drivers.
 
 *** Why not start with B2G/Firefox OS?
 
@@ -60,38 +60,45 @@ many more potential target hardware devices.
 ** chroot (Debian)
 
 I've built a chroot with Debian in it and some make targets to get it
-onto my phone (may require the phone is running cyanogenmod).
+onto my phone.  I have tested this works with CyanogenMod (which is
+what my phone is running) and with the vanilla Android that the
+emulator runs.  I advise against trying to run it on the emulator
+unless you have a near-infinite amount of spare time to wait for it,
+though.  By which I mean to say, an actual phone will be much faster.
 
-See `rootfs/` and in particular `rootfs/Makefile`
+    $ sude -E make -C rootfs
 
-_If you can get it to work_ them among the other things it does is start
-an ssh server (drpbear).  You can connect to your phone over ssh as
-root, using whatever key you had in your ssh agent when you invoked
-make.
+with your phone connected on USB.  This kicks off a multistage
+process
+
+- create a Debian chroot
+- install rsync on the phone with adb push
+- copies the chroot onto the phone
+- ssh into the chroot on the phone, apt-get a pile of packages and
+  build some more
+
+As with anything based on Make, it may not work.
 
 ** graphics (Mesa)
 
 I spent a good while chasing down various rabbit holes in the hope of
 getting hw-accelerated GL on my particular phone (Galaxy Nexus).
 Eventually I wrote that off as an exercise for Future Me and just
-built Mesa instead
+built Mesa instead.
 
-apt-get install python python-libxml2 x11proto-gl-dev pkg-config
- libdrm2 libdrm-dev libdrm-omap1 x11proto-dri2-dev autoconf automake
- libtool autotools-dev vim-tiny curl strace bison bison flex gettext
- gettext libxml2-dev libexpat1-dev llvm-3.1-dev
+The Makefile will attempt to do this for you but probably fail due to
+some search path problem I haven't taken the time to figure out yet.
+ssh into the phone then run
 
-./configure --disable-xlib-glx --enable-gles1 --enable-gles2
- --disable-glx
- --with-egl-platforms=fbdev --disable-xvmc
- --with-gallium-drivers=swrast --enable-gallium-llvm
- --enable-gallium-egl --enable-shared-glapi --enable-dri 
- --with-dri-drivers=swrast
+    # make -C /defone/stage2
 
-This doesn't seem to be any faster with llvmpipe than with the
-softpipe, but that could easily be because I haven't figured out how
-to enable llvmpipe properly
+to restart it by hand
 
+Allegedly it builds with llvmpipe, but casual use says it's no faster than
+boring old softpipe.  But that could easily be because I haven't
+figured out how to enable llvmpipe properly
+
+#+BEGIN EXAMPLE
 root@localhost:~/src# EGL_PLATFORM=fbdev GALLIUM_DRIVER=llvmpipe 
  LD_LIBRARY_PATH=/usr/local/lib EGL_LOG_LEVEL=debug  ./eglinfo
 libEGL debug: Native platform type: fbdev (environment overwrite)
@@ -123,10 +130,11 @@ Screen 0 Modes:
   id  width height refresh  name
 -----------------------------------------
 0x01   720   1280   60.000  Current Mode
+#+END EXAMPLE
 
-** JDK, Clojure : TO DO NEXT
+** JDK, Clojure
 
-Haven't even installed these yet.
+Installed in stage2
 
 ** Standalone hacking
 
@@ -143,6 +151,7 @@ or something like that.
 
 http://code.google.com/p/shellinabox/
 
+** Touchscreen
 ** Audio IO
 
 ALSA is standard Linux stuff.  Need to find out if channels are good
