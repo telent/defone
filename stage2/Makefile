@@ -15,7 +15,8 @@ download = curl $(1) -o $@
 	python-libxml2 x11proto-gl-dev \
 	pkg-config libdrm2 libdrm-dev libdrm-omap1 x11proto-dri2-dev autoconf \
 	automake libtool autotools-dev vim-tiny strace bison bison \
-	flex gettext gettext libxml2-dev libexpat1-dev llvm-3.1-dev git
+	flex gettext gettext libxml2-dev libexpat1-dev llvm-3.1-dev \
+	git openssh-client
 
 /usr/bin/java:
 	-groupadd messagebus 
