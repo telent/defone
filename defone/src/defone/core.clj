@@ -28,8 +28,29 @@
 ;; -7 -27 0 0 / 25 -57 9 0 / 0 0 / 0 0  / 0 0 0 0
 
 
+
 #_
-(parse-event '(-7 -27 0 0  25 -57 9 0  3 0  48 0  14 0 0 0))
+(parse-event '(249 229 0 0 25 199 9 0 3 0 48 0 14 0 0 0))
+
+(defn bytes->word [bytes]
+  (reduce (fn [acc next] (bit-or (bit-shift-left acc 8) next))
+          (reverse bytes)))
+
+(def event-types
+  (clojure.set/map-invert
+   {:syn 0
+    :key 1
+    :rel 2
+    :abs 3
+    :msc 4
+    :sw 5
+    :led 0x11
+    :snd 0x12
+    :rep 0x14
+    :ff 0x15
+    :pwr 0x16
+    :ff-status 0x17
+    :max 0x1f}))
 
 (defn parse-event [bytes]
   (let [[sec0 sec1 sec2 sec3
@@ -37,11 +58,11 @@
          type0 type1
          code0 code1
          v0 v1 v2 v3] bytes]
-    {:sec [sec0 sec1 sec2 sec3]
-     :usec [usec0 usec1 usec2 usec3]
-     :type [type0 type1]
-     :code [code0 code1]
-     :value [v0 v1 v2 v3]}))
+    {:sec (bytes->word [sec0 sec1 sec2 sec3])
+     :usec (bytes->word [usec0 usec1 usec2 usec3])
+     :type (get event-types (bytes->word [type0 type1]))
+     :code (bytes->word [code0 code1])
+     :value (bytes->word [v0 v1 v2 v3])}))
 
 (defn parse-events [out-chan in-chan]
   (go (loop []
@@ -50,7 +71,7 @@
         (let [bytess (partition 16 (<! in-chan))]
           ;; XXX we should actually parse the protocol at this point,
           ;; not just copy it onto the output channel
-          (async/onto-chan out-chan bytess nil))
+          (async/onto-chan out-chan (map parse-event bytess) nil))
         (recur)))
   out-chan)
 
