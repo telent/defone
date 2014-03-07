@@ -4,6 +4,7 @@
             [clojure.java.io :as io])
   (:import [java.io FileReader FileInputStream]))
 
+(def finished (atom false))
 
 (defn chan-from-file [channel name]
   (let [r (FileInputStream. name)]
@@ -11,8 +12,11 @@
       (let [buf (byte-array 80)]
         (loop []
           (if (let [bytes (.read r buf 0 80)]
-                (if (> bytes 0) (>!! channel (take bytes (seq buf))))
-                (>= bytes 0))
+                (if (> bytes 0)
+                  (let [out (map #(bit-and % 0xff)
+                                 (take bytes buf))]
+                    (>!! channel out)))
+                (and (>= bytes 0) (not @finished)))
             (recur)))) )
     channel))
 
