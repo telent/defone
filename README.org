@@ -190,3 +190,9 @@ Android handles this, mostly no need to get involved.  But we could
 use some way of updating resolv.conf when the network connectivity changes.
 
 ** GPS
+
+Not even looked at this yet, but I think it's part of RIL
+
+** Camera
+
+Not looked at this yet either
