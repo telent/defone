@@ -66,29 +66,30 @@ emulator runs.  I advise against trying to run it on the emulator
 unless you have a near-infinite amount of spare time to wait for it,
 though.  By which I mean to say, an actual phone will be much faster.
 
-    $ sude -E make -C rootfs
+    $ sudo -E make -C rootfs
 
-with your phone connected on USB.  This kicks off a multistage
-process
+with your phone connected on USB.  This 
 
-- create a Debian chroot
+- creates a Debian chroot
 - install rsync on the phone with adb push
 - copies the chroot onto the phone
-- ssh into the chroot on the phone, apt-get a pile of packages and
-  build some more
+- "ssh root@the-phone make -C /defone/stage2" - connect to the phone
+  and kick off the next stage
 
-As with anything based on Make, it may not work.
+As with anything based on Make, it may not work.  
 
 ** graphics (Mesa) / working but slow
 
 I spent a good while chasing down various rabbit holes in the hope of
 getting hw-accelerated GL on my particular phone (Galaxy Nexus).
-Eventually I wrote that off as an exercise for Future Me and just
-built Mesa instead.
+Eventually I wrote that off as an exercise for Future Me and now just
+use Mesa instead.
 
-The Makefile will attempt to do this for you but probably fail due to
-some search path problem I haven't taken the time to figure out yet.
-ssh into the phone then run
+Builing Mesa is one of the targets of the stage2 build (i.e. it is
+built natively by the phone).  Although the Makefile that builds and
+installs the chroot is supposed to kick off a stage2 build, it
+currently fails due to some search path problem I haven't taken the
+time to figure out yet.  ssh into the phone then run
 
     # make -C /defone/stage2
 
@@ -134,18 +135,21 @@ Screen 0 Modes:
 
 ** JDK, Leiningen / installed
 
+in stage2 build
+
 ** Actual Clojure code
 
-There is an actual clojure project on the device in /defone/defone/
+The stage2 build copies /defone/defone/ onto the device.  This is 
+a bog-standard clojure project created by "lein new"
 
 It's not autostarted yet: probably we will spin up a headless nrepl
 on port 9990 (U+2706 /Telephone Location Sign) and maybe have it
 respawn on exit.
 
-This is a bit sucky having everything in one clojure project because
-it means bringing the whole platform down whenever we want to add
-another library - or whever we get the jvm into a bad state and need
-to restart this.  Definitely a topic we will need to revisit
+It is a bit sucky having everything in one clojure project because it
+means bringing the whole platform down whenever we want to add another
+library - or whenever for any reason we get the JVM into a bad state
+and need to restart it.  Definitely a topic we will need to revisit.
 
 ** Standalone hacking
 
