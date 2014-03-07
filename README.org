@@ -57,7 +57,7 @@ many more potential target hardware devices.
 
 (Very) rough, (not at all) ready.
 
-** chroot (Debian)
+** chroot (Debian) / more or less functional
 
 I've built a chroot with Debian in it and some make targets to get it
 onto my phone.  I have tested this works with CyanogenMod (which is
@@ -79,7 +79,7 @@ process
 
 As with anything based on Make, it may not work.
 
-** graphics (Mesa)
+** graphics (Mesa) / working but slow
 
 I spent a good while chasing down various rabbit holes in the hope of
 getting hw-accelerated GL on my particular phone (Galaxy Nexus).
@@ -132,31 +132,48 @@ Screen 0 Modes:
 0x01   720   1280   60.000  Current Mode
 #+END EXAMPLE
 
-** JDK, Clojure
+** JDK, Leiningen / installed
 
-Installed in stage2
+** Actual Clojure code
+
+There is an actual clojure project on the device in /defone/defone/
+
+It's not autostarted yet: probably we will spin up a headless nrepl
+on port 9990 (U+2706 /Telephone Location Sign) and maybe have it
+respawn on exit.
+
+This is a bit sucky having everything in one clojure project because
+it means bringing the whole platform down whenever we want to add
+another library - or whever we get the jvm into a bad state and need
+to restart this.  Definitely a topic we will need to revisit
 
 ** Standalone hacking
 
 It is a goal that we can develop directly on the device without being
-dependent on some other machine with an SDK/special software installed.
-Since we have no plans currently to support programming without a
+dependent on some other machine with an SDK/special software
+installed.  Since we have no plans currently to support programming without a
 keyboard, we will at least be dependent on being able to connect a
-keyboard or a device that has one attached
+keyboard or a device that has one attached.
 
-As noted previously, there is ssh which works fine with Emacs
-Tramp.  Unfortunately, not every computer in the world has emacs
-installed: eventually we may want to install a web server and shellinabox
-or something like that.
+I'm not yet sure what this should look like.  I guess we want shell,
+repl, editor all exported via a web interface so we could point any
+browser at the phone and hack.  Bonus points if it was reattaching to
+an existing session instead of having to recreate context on each request.
 
-http://code.google.com/p/shellinabox/
+Would we expect it to be better than emacs?  Would we expect it to be
+emacs?  Light table?
 
 ** Touchscreen
+
+We have succeeded in opening the touchscreen device and getting bytes
+out of it: turning those into touch events and processing them into
+gestures is probably our first actual core.async task
+
 ** Audio IO
 
 ALSA is standard Linux stuff.  Need to find out if channels are good
 for bulk audio data (maybe in 8k blocks or something) or if they
-would be best reserved for siganlling and let the actual audio happen
+would be best reserved for signalling and let the actual audio happen
 out of bound.
 
 ** Telephony
@@ -165,4 +182,7 @@ RIL looks at least semi-documented.  Write some stuff to channelise it
 
 ** IP Networking
    
-Android handles this, no need to get involved
+Android handles this, mostly no need to get involved.  But we could
+use some way of updating resolv.conf when the network connectivity changes.
+
+** GPS
