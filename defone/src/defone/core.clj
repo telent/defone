@@ -23,6 +23,22 @@
 ;; -7 -27 0 0 / 25 -57 9 0 / 3 0 / 54 0 / 126 3 0 0
 ;; -7 -27 0 0 / 25 -57 9 0 / 0 0 / 0 0  / 0 0 0 0
 
+
+#_
+(parse-event '(-7 -27 0 0  25 -57 9 0  3 0  48 0  14 0 0 0))
+
+(defn parse-event [bytes]
+  (let [[sec0 sec1 sec2 sec3
+         usec0 usec1 usec2 usec3
+         type0 type1
+         code0 code1
+         v0 v1 v2 v3] bytes]
+    {:sec [sec0 sec1 sec2 sec3]
+     :usec [usec0 usec1 usec2 usec3]
+     :type [type0 type1]
+     :code [code0 code1]
+     :value [v0 v1 v2 v3]}))
+
 (defn parse-events [out-chan in-chan]
   (go (loop []
         ;; XXX this does not account for the need to resync
