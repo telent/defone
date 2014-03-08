@@ -52,6 +52,15 @@
     :ff-status 0x17
     :max 0x1f}))
 
+(def event-codes
+  (clojure.set/map-invert
+   {:slot 47
+    :touch-major 48
+    :position-x 53
+    :position-y 54
+    :tracking-id 57
+    :pressure 58}))
+
 (defn parse-event [bytes]
   (let [[sec0 sec1 sec2 sec3
          usec0 usec1 usec2 usec3
@@ -61,7 +70,9 @@
     {:sec (bytes->word [sec0 sec1 sec2 sec3])
      :usec (bytes->word [usec0 usec1 usec2 usec3])
      :type (get event-types (bytes->word [type0 type1]))
-     :code (bytes->word [code0 code1])
+     :code (let [code (bytes->word [code0 code1])]
+             (get event-codes code code))
+
      :value (bytes->word [v0 v1 v2 v3])}))
 
 (defn parse-events [out-chan in-chan]
@@ -69,8 +80,6 @@
         ;; XXX this does not account for the need to resync
         ;; if we somehow started other than on a packet boundary
         (let [bytess (partition 16 (<! in-chan))]
-          ;; XXX we should actually parse the protocol at this point,
-          ;; not just copy it onto the output channel
           (async/onto-chan out-chan (map parse-event bytess) nil))
         (recur)))
   out-chan)
