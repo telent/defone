@@ -84,7 +84,16 @@
         (recur)))
   out-chan)
 
+(defn read-stuff []
+  (let [bytes (chan-from-file (chan) "/dev/input/event1")
+        events (parse-events (chan) bytes)
+        timeout (async/timeout 6000)]
+    (go (loop []
+          (and
+           (async/alt!
+            timeout (do (println "timeut") false)
+            events ([v] (or (println v) true)))
+           (recur))))))
+
 #_
-(let [bytes (chan-from-file (chan) "/dev/input/event1")
-      events (parse-events (chan) bytes)]
-  (go (while true (println (<! events)))))
+(read-stuff)
