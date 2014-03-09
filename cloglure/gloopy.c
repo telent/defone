@@ -229,12 +229,6 @@ egl_init_for_fbdev(int fd, EGLBoolean verbose)
       egl_fatal("failed to make context/surface current");
 }
 
-static void
-egl_present(void)
-{
-   if (!eglSwapBuffers(egl_dpy, egl_surf))
-      egl_fatal("failed to swap buffers");
-}
 
 static void
 egl_destroy(void)
@@ -301,7 +295,12 @@ init(int width, int height)
    glTranslatef(0.0, 0.0, -10.0);
 }
 
-int cljegl_start(char *fbdev) {
+void cloglure_swap_buffers() {
+   if (!eglSwapBuffers(egl_dpy, egl_surf))
+      egl_fatal("failed to swap buffers");
+}
+
+int cloglure_start(char *fbdev) {
    struct fb_var_screeninfo vinfo;
    int fd, tty_err, frame;
 
@@ -323,27 +322,10 @@ int cljegl_start(char *fbdev) {
    return fd;
 }
 
-void cljegl_stop(int fd) {
+void cloglure_stop(int fd) {
     tty_close();
     
     egl_destroy();
     close(fd);
 }
 
-
-int
-main(int argc, char **argv)
-{
-    char fbdev[] = "/dev/graphics/fb0";
-    struct fb_var_screeninfo vinfo;
-    int fd, frame;
-    fd = cljegl_start(fbdev);
-    
-    for (frame = 0; frame <= 180; frame++) {
-	draw(frame);
-	egl_present();
-    }
-    cljegl_stop(fd);
-    
-    return 0;
-}
