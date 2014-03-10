@@ -10,3 +10,7 @@ example: example.c
 
 clean:
 	-rm *.o *.a *.so
+
+install:
+	cp *.so /usr/local/lib
+	/sbin/ldconfig
