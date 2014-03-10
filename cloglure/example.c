@@ -155,8 +155,6 @@ draw(int frame)
 
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  
-   // /
    glVertexAttribPointer(attr_pos, 2, GL_FLOAT, GL_FALSE, 0, verts);
    glVertexAttribPointer(attr_color, 3, GL_FLOAT, GL_FALSE, 0, colors);
    glEnableVertexAttribArray(attr_pos);
@@ -166,15 +164,6 @@ draw(int frame)
    
    glDisableVertexAttribArray(attr_pos);
    glDisableVertexAttribArray(attr_color);
-   // /
-
-
-}
-
-static void
-egl_present(void)
-{
-    cloglure_swap_buffers();
 }
 
 
@@ -182,14 +171,13 @@ int
 main(int argc, char **argv)
 {
     char fbdev[] = "/dev/graphics/fb0";
-    //    struct fb_var_screeninfo vinfo;
     int fd, frame;
     fd = cloglure_start(fbdev);
     create_shaders();
     
     for (frame = 0; frame <= 180; frame++) {
 	draw(frame);
-	egl_present();
+	cloglure_swap_buffers();
     }
     cloglure_stop(fd);
     
