@@ -56,6 +56,7 @@
 /* for EGL */
 #include <EGL/egl.h>
 #include <GLES/gl.h>
+#include <GLES2/gl2.h>
 
 static int tty_fd = -1;
 static int tty_saved_vtno;
@@ -186,12 +187,18 @@ egl_fatal(char *format, ...)
    abort();
 }
 
+
 static void
 egl_init_for_fbdev(int fd, EGLBoolean verbose)
 {
    const EGLNativeWindowType native_win = (EGLNativeWindowType) NULL;
    EGLint major, minor, num_configs;
-   EGLConfig conf;
+   EGLConfig conf;  
+
+   static const EGLint ctx_attribs[] = {
+      EGL_CONTEXT_CLIENT_VERSION, 2,
+      EGL_NONE
+   };
 
    egl_verbose = verbose;
 
@@ -217,7 +224,7 @@ egl_init_for_fbdev(int fd, EGLBoolean verbose)
        !num_configs)
       egl_fatal("failed to choose a config");
    fprintf(stderr," creating context ...");
-   egl_ctx = eglCreateContext(egl_dpy, conf, EGL_NO_CONTEXT, NULL);
+   egl_ctx = eglCreateContext(egl_dpy, conf, EGL_NO_CONTEXT, ctx_attribs);
    if (egl_ctx == EGL_NO_CONTEXT)
       egl_fatal("failed to create a context");
 
@@ -250,14 +257,6 @@ init(int width, int height)
    GLfloat ar = (GLfloat) width / height;
 
    glViewport(0, 0, width, height);
-
-   glMatrixMode(GL_PROJECTION);
-   glLoadIdentity();
-   glFrustumf(-ar, ar, -1, 1, 5.0, 60.0);
-
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-   glTranslatef(0.0, 0.0, -10.0);
 }
 
 void cloglure_swap_buffers() {
