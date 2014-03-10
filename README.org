@@ -143,7 +143,7 @@ The stage2 build copies /defone/defone/ onto the device.  This is
 a bog-standard clojure project created by "lein new"
 
 It's not autostarted yet: probably we will spin up a headless nrepl
-on port 9990 (U+2706 /Telephone Location Sign) and maybe have it
+on port 9990 (  ✆ / U+2706 /Telephone Location Sign) and maybe have it
 respawn on exit.
 
 It is a bit sucky having everything in one clojure project because it
@@ -169,9 +169,25 @@ emacs?  Light table?
 
 ** Touchscreen
 
-We have succeeded in opening the touchscreen device and getting bytes
-out of it: turning those into touch events and processing them into
-gestures is probably our first actual core.async task
+We have succeeded in opening the touchscreen device, getting bytes out
+of it, and turning those into maps that model the badly named struct
+input_event.  To do:
+
+- work out which input device is the touchscreen (currently hardcoded)
+
+- aggregate each bunch of events between successive 'sync' events
+  into a single thing that represents an actual touch
+
+- process those to be meaningful
+  - normalise co-ords
+  - identify gestures (swipe, drag, etc)
+  - etc
+
+- write a finger painting demo
+
+** Graphics
+
+Some clojure code that does GL would be a Good Thing some time soon
 
 ** Audio IO
 
