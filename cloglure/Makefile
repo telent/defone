@@ -11,6 +11,6 @@ example: example.c
 clean:
 	-rm *.o *.a *.so
 
-install:
+install: libcloglure.so
 	cp *.so /usr/local/lib
 	/sbin/ldconfig
