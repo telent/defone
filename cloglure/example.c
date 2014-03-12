@@ -3,10 +3,9 @@
 #include <stdio.h>
 #include <math.h>
 
-static GLint attr_pos = 0, attr_color = 1;
 static GLint u_matrix = -1;
 
-static void
+static GLuint
 create_shaders(void)
 {
    static const char *fragShaderText =
@@ -62,23 +61,9 @@ create_shaders(void)
 
    glUseProgram(program);
 
-   if (1) {
-      /* test setting attrib locations */
-      glBindAttribLocation(program, attr_pos, "pos");
-      glBindAttribLocation(program, attr_color, "color");
-      glLinkProgram(program);  /* needed to put attribs into effect */
-   }
-   else {
-      /* test automatic attrib locations */
-      attr_pos = glGetAttribLocation(program, "pos");
-      attr_color = glGetAttribLocation(program, "color");
-   }
-
    u_matrix = glGetUniformLocation(program, "modelviewProjection");
    printf("Uniform modelviewProjection at %d\n", u_matrix);
-   printf("Attrib pos at %d\n", attr_pos);
-   printf("Attrib color at %d\n", attr_color);
-
+   return program;
 }
 
 
@@ -133,7 +118,7 @@ mul_matrix(GLfloat *prod, const GLfloat *a, const GLfloat *b)
 }
 
 static void
-draw(int frame)
+draw(int frame, GLint attr_pos, GLint attr_color)
 {
    static const GLfloat verts[3][2] = {
       { -1, -1 },
@@ -173,10 +158,17 @@ main(int argc, char **argv)
     char fbdev[] = "/dev/graphics/fb0";
     int fd, frame;
     fd = cloglure_start(fbdev);
-    create_shaders();
+
+    GLint attr_pos, attr_color;
+    GLuint program = create_shaders();
+
+    attr_pos = glGetAttribLocation(program, "pos");
+    attr_color = glGetAttribLocation(program, "color");
+    printf("Attrib pos at %d\n", attr_pos);
+    printf("Attrib color at %d\n", attr_color);
     
     for (frame = 0; frame <= 180; frame++) {
-	draw(frame);
+	draw(frame, attr_pos, attr_color);
 	cloglure_swap_buffers();
     }
     cloglure_stop(fd);
