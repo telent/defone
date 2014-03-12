@@ -140,17 +140,8 @@
 
 ;;;
 
-(def triangle-verts
-  [[-1, -1],
-   [1,  -1],
-   [0,   1]])
-
-(def triangle-colors
-  [[1, 0, 0, 1],
-   [0, 1, 0, 1],
-   [0, 0, 1, 1]])
-
 (def GL_COMPILE_STATUS (int 0x8b81))
+(def GL_LINK_STATUS (int 0x8B82))
 
 (defn gl-make-shader [type text]
   (let [typenum (get {:fragment 0x8B30 :vertex 0x8B31} type)
@@ -167,6 +158,22 @@
     (println (seq compiled?))
     (and (not (zero? (aget compiled? 0))) shader)))
 
+
+(defn gl-make-program [shaders]
+  (let [program (int (jna/invoke Integer GLESv2/glCreateProgram))
+        success? (int-array [0])]
+    (doall (map #(jna/invoke Integer GLESv2/glAttachShader program %) shaders))
+    (jna/invoke Integer GLESv2/glLinkProgram program)
+    (jna/invoke Integer GLESv2/glGetProgramiv program GL_LINK_STATUS success?)
+    (println (seq success?))
+    (if (zero? (aget success? 0))
+      (let [err (char-array 1000)
+            len (int-array [0])]
+        (jna/invoke Integer GLESv2/glGetProgramInfoLog
+                    program (int 1000) len err)
+        (println (clojure.string/trim (String. err)))
+        nil)
+      (do (jna/invoke Integer GLESv2/glUseProgram program) program))))
 
 (defn create-shaders []
   (let [frag (gl-make-shader
@@ -186,15 +193,69 @@
                "   gl_Position = modelviewProjection * pos;\n"
                "   v_color = color;\n"
                "}\n"])]
-    [frag vert]))
+    (and frag vert (gl-make-program [frag vert]))))
+
+(def GL_FLOAT (int 0x1406))
+(def GL_COLOR_BUFFER_BIT 0x00004000)
+(def GL_DEPTH_BUFFER_BIT 0x00000100)
+(def GL_TRIANGLES (int 0x0004))
+
+(defn flat-float-array [matrix]
+  (float-array (flatten matrix)))
+
+(defn gl-uniform-matrix [index matrix]
+  (jna/invoke Integer GLESv2/glUniformMatrix4fv
+              index (int 1) (int 0) (flat-float-array matrix)))
+
+(defn gl-attribute-index [program name]
+  (int (jna/invoke Integer GLESv2/glGetAttribLocation program name)))
+
+(defn draw-triangle [frame pos col mvp]
+  (let [verts [[-1 -1]
+               [1  -1]
+               [0   1]]
+        cols [[1 0 0 1]
+              [0 1 0 1]
+              [0 0 1 1]]
+        matrix (matrix-multiply (matrix-rotate-z (* frame (/ Math/PI 180)))
+                                (matrix-scale 0.5 0.5 0.5))]
+
+    (gl-uniform-matrix mvp matrix)
+    (jna/invoke Integer GLESv2/glClear
+                (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
+    (jna/invoke Integer GLESv2/glVertexAttribPointer
+                pos (int 2) GL_FLOAT (int 0) (int 0)
+                (flat-float-array verts))
+    (jna/invoke Integer GLESv2/glVertexAttribPointer
+                col (int 3) GL_FLOAT (int 0) (int 0)
+                (flat-float-array cols))
+
+    (jna/invoke Integer GLESv2/glEnableVertexAttribArray pos)
+    (jna/invoke Integer GLESv2/glEnableVertexAttribArray col)
+
+    (jna/invoke Integer GLESv2/glDrawArrays GL_TRIANGLES (int 0) (int 3))
+
+    (jna/invoke Integer GLESv2/glDisableVertexAttribArray pos)
+    (jna/invoke Integer GLESv2/glDisableVertexAttribArray col)
+    ))
 
 
-(defn gl-triangle [keep]
-  (let [fb0 (jna/invoke Integer cloglure/cloglure_start "/dev/graphics/fb0")]
-    (println fb0)
-    (jna/invoke Integer cloglure/cloglure_swap_buffers)
+(defn gl-run-demo [keep]
+  (let [fb0 (jna/invoke Integer cloglure/cloglure_start "/dev/graphics/fb0")
+        program (create-shaders)
+        attr-position (gl-attribute-index program "pos")
+        attr-color (gl-attribute-index program "color")
+        u-matrix
+        (int (jna/invoke Integer glGetUniformLocation program "modelviewProjection")
+             )]
+    (println [fb0 program attr-position attr-color u-matrix])
+    (doall
+     (map (fn [frame]
+            (draw-triangle frame attr-position attr-color u-matrix)
+            (jna/invoke Integer cloglure/cloglure_swap_buffers))
+          (range 0 60)))
     (or keep
         (jna/invoke Integer cloglure/cloglure_stop fb0))))
 
 #_
-(gl-triangle)
+(gl-run-demo nil)
