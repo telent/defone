@@ -144,7 +144,7 @@
 (def GL_LINK_STATUS (int 0x8B82))
 
 (defn gl-make-shader [type text]
-  (let [typenum (get {:fragment 0x8B30 :vertex 0x8B31} type)
+  (let [typenum (int (get {:fragment 0x8B30 :vertex 0x8B31} type))
         shader (int (jna/invoke Integer GLESv2/glCreateShader typenum))
         string (clojure.string/join "\n" text)
         compiled? (int-array [42])]
@@ -205,7 +205,7 @@
 
 (defn gl-uniform-matrix [index matrix]
   (jna/invoke Integer GLESv2/glUniformMatrix4fv
-              index (int 1) (int 0) (flat-float-array matrix)))
+              (int index) (int 1) (int 0) (flat-float-array matrix)))
 
 (defn gl-attribute-index [program name]
   (int (jna/invoke Integer GLESv2/glGetAttribLocation program name)))
@@ -246,7 +246,7 @@
         attr-position (gl-attribute-index program "pos")
         attr-color (gl-attribute-index program "color")
         u-matrix
-        (int (jna/invoke Integer glGetUniformLocation program "modelviewProjection")
+        (int (jna/invoke Integer GLESv2/glGetUniformLocation program "modelviewProjection")
              )]
     (println [fb0 program attr-position attr-color u-matrix])
     (doall
