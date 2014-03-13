@@ -265,6 +265,9 @@ void cloglure_swap_buffers() {
 	egl_fatal("failed to swap buffers");
     }
 }
+
+EGLDisplay cloglure_get_display() {
+    return egl_dpy;
 }
 
 int cloglure_start(char *fbdev) {
