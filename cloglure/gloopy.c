@@ -260,8 +260,11 @@ init(int width, int height)
 }
 
 void cloglure_swap_buffers() {
-   if (!eglSwapBuffers(egl_dpy, egl_surf))
-      egl_fatal("failed to swap buffers");
+    if (!eglSwapBuffers(egl_dpy, egl_surf)) {
+	printf("egl error %x, dpy= %x\n", eglGetError(), egl_dpy);
+	egl_fatal("failed to swap buffers");
+    }
+}
 }
 
 int cloglure_start(char *fbdev) {
