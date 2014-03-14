@@ -163,7 +163,6 @@
                 (int 0))
     (jna/invoke Integer GLESv2/glCompileShader shader)
     (jna/invoke Integer GLESv2/glGetShaderiv shader GL_COMPILE_STATUS compiled?)
-    (println (seq compiled?))
     (and (not (zero? (aget compiled? 0))) shader)))
 
 
@@ -173,7 +172,6 @@
     (doall (map #(jna/invoke Integer GLESv2/glAttachShader program %) shaders))
     (jna/invoke Integer GLESv2/glLinkProgram program)
     (jna/invoke Integer GLESv2/glGetProgramiv program GL_LINK_STATUS success?)
-    (println (seq success?))
     (if (zero? (aget success? 0))
       (let [err (char-array 1000)
             len (int-array [0])]
@@ -255,12 +253,11 @@
         u-matrix
         (int (jna/invoke Integer GLESv2/glGetUniformLocation program "modelviewProjection")
              )]
-    (println [fb0 program attr-position attr-color u-matrix])
     (doall
      (map (fn [frame]
             (draw-triangle frame attr-position attr-color u-matrix)
             (jna/invoke Integer cloglure/cloglure_swap_buffers))
-          (range 0 60)))
+          (range 0 180)))
     (or keep
         (jna/invoke Integer cloglure/cloglure_stop fb0))))
 
