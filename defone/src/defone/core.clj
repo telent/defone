@@ -140,6 +140,14 @@
 
 ;;;
 
+(jna/to-ns clogl cloglure [Integer cloglure_start,
+                           Integer cloglure_get_display])
+(jna/to-ns egl EGL [Integer eglGetError])
+(jna/to-ns gl GLESv2 [Integer glUniformMatrix4fv,
+                      Integer glClear])
+
+
+
 (def GL_COMPILE_STATUS (int 0x8b81))
 (def GL_LINK_STATUS (int 0x8B82))
 
@@ -204,8 +212,8 @@
   (float-array (flatten matrix)))
 
 (defn gl-uniform-matrix [index matrix]
-  (jna/invoke Integer GLESv2/glUniformMatrix4fv
-              (int index) (int 1) (int 0) (flat-float-array matrix)))
+  (gl/glUniformMatrix4fv
+   (int index) (int 1) (int 0) (flat-float-array matrix)))
 
 (defn gl-attribute-index [program name]
   (int (jna/invoke Integer GLESv2/glGetAttribLocation program name)))
@@ -221,8 +229,7 @@
                                 (matrix-scale 0.5 0.5 0.5))]
 
     (gl-uniform-matrix mvp matrix)
-    (jna/invoke Integer GLESv2/glClear
-                (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
+    (gl/glClear (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
     (jna/invoke Integer GLESv2/glVertexAttribPointer
                 pos (int 2) GL_FLOAT (int 0) (int 0)
                 (flat-float-array verts))
