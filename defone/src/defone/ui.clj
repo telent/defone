@@ -8,6 +8,7 @@
                            Integer cloglure_get_display])
 (jna/to-ns egl EGL [Integer eglGetError])
 (jna/to-ns gl GLESv2 [Integer glUniformMatrix4fv,
+                      Integer glUniform4fv,
                       Integer glVertexAttribPointer,
                       Integer glEnableVertexAttribArray,
                       Integer glDrawArrays,
@@ -70,15 +71,14 @@
                "}"])
         vert (gl-make-shader
               :vertex
-              ["uniform mat4 modelviewProjection;\n"
-               "attribute vec4 pos;\n"
-               ;; "attribute vec4 color;\n"
-               "varying vec4 v_color;\n"
-               "void main() {\n"
-               "   gl_Position = modelviewProjection * pos;\n"
-               ;; "   v_color = color;\n"
-               "   v_color = vec4(1, 0.5, 0, 1);\n"
-               "}\n"])]
+              ["uniform mat4 modelviewProjection;"
+               "attribute vec4 pos;"
+               "uniform vec4 color;"
+               "varying vec4 v_color;"
+               "void main() {"
+               "   gl_Position = modelviewProjection * pos;"
+               "   v_color = color;"
+               "}"])]
     (assert frag)
     (assert vert)
     (gl-make-program [frag vert])))
@@ -91,9 +91,14 @@
   (gl/glUniformMatrix4fv
    (int index) (int 1) (int 0) (flat-float-array matrix)))
 
+(defn gl-uniform4 [index vals]
+  (gl/glUniform4fv (int index) (int 1) (flat-float-array vals)))
+
 (defn gl-attribute-index [program name]
   (int (jna/invoke Integer GLESv2/glGetAttribLocation program name)))
 
+(defn gl-uniform-index [program name]
+  (int (jna/invoke Integer GLESv2/glGetUniformLocation program name)))
 
 ;;;;;;
 
@@ -104,6 +109,7 @@
   ;; lazily but let's try it the easy way first
   (let [pos (:pos (:indices context))]
     (gl-uniform-matrix (:mvp (:indices context)) (:transform context))
+    (gl-uniform4 (:color (:indices context)) (:color context))
 
     ;; XXX I suspect this only works by accident.  Last arg is
     ;; supposed to be "offset of the first component of the first
@@ -156,12 +162,11 @@
   (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")
         program (create-shaders)
         attr-position (gl-attribute-index program "pos")
-        attr-color (gl-attribute-index program "color")
-        u-matrix
-        (int (jna/invoke Integer GLESv2/glGetUniformLocation
-                         program "modelviewProjection"))
+        attr-color (gl-uniform-index program "color")
+        u-matrix (gl-uniform-index program "modelviewProjection")
         context {:indices
                  {:position attr-position
+                  :color attr-color
                   :mvp u-matrix}}]
     (println attr-position attr-color u-matrix context)
     (paint context scene)
