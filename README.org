@@ -58,9 +58,14 @@ many more potential target hardware devices.
 
 * Current status / TODO
 
-(Very) rough, (not at all) ready.
+(Very) rough, (not at all) ready.  
 
-** chroot (Debian) / more or less functional
+Next tasks: 
+- chop up defone.core into separate namespaces
+- make the touch event data drive the graphics being generated
+
+** Infrastrcuture
+*** chroot (Debian) / more or less functional
 
 I've built a chroot with Debian in it and some make targets to get it
 onto my phone.  I have tested this works with CyanogenMod (which is
@@ -81,7 +86,7 @@ with your phone connected on USB.  This
 
 As with anything based on Make, it may not work.  
 
-** graphics (Mesa) / working but slow
+*** graphics (Mesa) / working but slow
 
 I spent a good while chasing down various rabbit holes in the hope of
 getting hw-accelerated GL on my particular phone (Galaxy Nexus).
@@ -136,11 +141,11 @@ Screen 0 Modes:
 0x01   720   1280   60.000  Current Mode
 #+END EXAMPLE
 
-** JDK, Leiningen / installed
+*** JDK, Leiningen / installed
 
 in stage2 build
 
-** Actual Clojure code
+*** Actual Clojure code
 
 The stage2 build copies /defone/defone/ onto the device.  This is 
 a bog-standard clojure project created by "lein new"
@@ -154,7 +159,7 @@ means bringing the whole platform down whenever we want to add another
 library - or whenever for any reason we get the JVM into a bad state
 and need to restart it.  Definitely a topic we will need to revisit.
 
-** Standalone hacking
+*** Standalone hacking
 
 It is a goal that we can develop directly on the device without being
 dependent on some other machine with an SDK/special software
@@ -170,7 +175,7 @@ an existing session instead of having to recreate context on each request.
 Would we expect it to be better than emacs?  Would we expect it to be
 emacs?  Light table?
 
-** Touchscreen
+*** Touchscreen
 
 We have succeeded in opening the touchscreen device, getting bytes out
 of it, and turning those into maps that model the badly named struct
@@ -188,30 +193,102 @@ input_event.  To do:
 
 - write a finger painting demo
 
-** Graphics
+*** Gestures
 
-Some clojure code that does GL would be a Good Thing some time soon
+The sticking point for gesture recognition so often seems to be
+distinguishing between receivers of an in-progress gesture: for
+example, are you trying to paint something or are you trying to swipe
+the paint app offscreen and do something else.
 
-** Audio IO
+One approach would be to say that *everything* goes to the foreground
+UI except maybe for some strictly limited set of events (say, touches
+that start/end in the bottom 10% of the screen) then there simply
+isn't a conflict.  Or even use a hardware button for task
+switching/access to the "window manager"
+
+One idea worth exploring is that we might model "flings" (traces
+where the finger velocity at touch-end is non-zero) by sending fake
+movement events after touch-end that "decelerate".  I guess we'd have
+to have some concept of 'momentum' so that the app would tell the
+channel the weight of the object being flung and bigger UI elements
+would take correspondingly longer to slow down
+
+*** IP Networking
+   
+Android handles this, mostly no need to get involved.  But we could
+use some way of updating resolv.conf when the network connectivity changes.
+
+*** GPS
+
+Not even looked at this yet, but I think it's part of RIL
+
+*** Telephony
+
+RIL looks at least semi-documented.  Write some stuff to channelise it
+
+*** Camera
+
+Not looked at this yet either
+
+
+** Apps and API
+*** data sources
+
+I see no reason not to use sqlite3 for local data providers as android
+does.  We can issue queries against the data source that return a
+channel, and a message on that channel for each result row
+
+Binary chunks over channels for network IO is also conceivable.  For
+structured data we should be able to interpose a parser into the
+channel flow so that our consumer gets a json-style dictionary or an
+html element+kids or something meaningful like that on each read.
+
+*** Graphics
+
+We have drawn a rotating triangle using GLES via JNA.  This took
+longer than anticipated because anything involving FFI always takes
+longer than anticipated. 
+
+What we're going to need is 
+- a scene graph
+- some code to walk over it and render to opengl in a reasonably 
+efficient fashion
+
+
+I think we will need a half-decent glue layer on top of gles just to
+deal with the C-ishness (e.g. something that checks for errors), and
+then we can decide what we need in terms of actual UI/widgets
+
+One question we haven't yet had any good ideas about is whether the
+channel concept can be applied to output. OpenGL has the idea of
+"give me an array of vertices", maybe there's some commonality there.
+Otherwise our presentation layer is currently ad hoc and that seems
+wrong.
+
+Suspect that we are going to have to construct our own UI elements
+and treat GL as a good ay to draw polygons but not much more
+
+What do we need?
+- buttons (emit events on some channel when pushed)
+- one-row-per-event table, connected to input channel
+- one-col-per-event tables?
+- x/y graphs, maybe
+
+Should UI widgets be able to reconfigure themselves dynamically
+(e.g. send a message to an x/y graph saying "now rescale and show y
+values up to 600") or is that state we'd be better off without and
+should the parent widget destroy and create afresh?
+
+
+
+What happens when we have opengl-inside-opengl: e.g. a three-d app
+projecting its output onto the side face of a hexagon which the app
+carousel is controlling?
+
+*** Audio IO
 
 ALSA is standard Linux stuff.  Need to find out if channels are good
 for bulk audio data (maybe in 8k blocks or something) or if they
 would be best reserved for signalling and let the actual audio happen
 out of bound.
 
-** Telephony
-
-RIL looks at least semi-documented.  Write some stuff to channelise it
-
-** IP Networking
-   
-Android handles this, mostly no need to get involved.  But we could
-use some way of updating resolv.conf when the network connectivity changes.
-
-** GPS
-
-Not even looked at this yet, but I think it's part of RIL
-
-** Camera
-
-Not looked at this yet either
