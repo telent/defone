@@ -1,5 +1,7 @@
 (ns defone.ui
   (:require [defone.matrix :as m]
+            [clojure.core.async :as async
+             :refer [chan >!! <!! >! <! go ]]
             [net.n01se.clojure-jna :as jna]))
 
 (jna/to-ns clogl cloglure [Integer cloglure_start,
@@ -158,7 +160,7 @@
     (apply draw-scene context scene)
     (clogl/cloglure_swap_buffers)))
 
-(defn run-the-world [scene]
+(defn render-loop [chan]
   (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")
         program (create-shaders)
         attr-position (gl-attribute-index program "pos")
@@ -168,15 +170,35 @@
                  {:position attr-position
                   :color attr-color
                   :mvp u-matrix}}]
-    (println attr-position attr-color u-matrix context)
-    (paint context scene)
+    (println context)
+    (loop []
+      (and
+       (let [scene (<!! chan)]
+         (if scene
+           (do
+             (println ["scene " scene])
+             (paint context scene)
+             true)))
+       (recur)))
     (clogl/cloglure_stop fb0)))
 
-(def the-scene
-  [:scale [0.5 0.5 0.5]
-   [:rotate-z (* 30 (/ Math/PI 180))
-    [:color [1 0 0 1]
-     [:aggregate :triangle
-      [:vertices [-1 -1 0] [1  -1 0] [0  1 0]]]]]])
+
+(defn start-render-thread [scene-atom]
+  (let [c (async/chan)]
+    (future (defone.ui/render-loop c))
+    (add-watch scene-atom :render
+               (fn [key ref old new] (>!! c new)))
+    c))
+(defn stop-render-thread [chan]
+  (async/close! chan))
+
+(def the-scene (atom
+                [:scale [0.5 0.5 0.5]
+                 [:rotate-z (* 10 (/ Math/PI 180))
+                  [:color [1 1 0 1]
+                   [:aggregate :triangle
+                    [:vertices
+                     [-1 -1 0] [1 -1 0] [0 1 0]
+                     ]]]]]))
 #_
-(run-the-world the-scene)
+(def render-channel (start-render-thread the-scene))
