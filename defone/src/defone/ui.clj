@@ -53,7 +53,6 @@
     (doall (map #(jna/invoke Integer GLESv2/glAttachShader program %) shaders))
     (jna/invoke Integer GLESv2/glLinkProgram program)
     (jna/invoke Integer GLESv2/glGetProgramiv program GL_LINK_STATUS success?)
-    (println [:success (seq success?)])
     (if (zero? (aget success? 0))
       (let [err (char-array 1000)
             len (int-array [0])]
@@ -121,11 +120,10 @@
     ;; software-only mesa and "gpu" memory is system memory
 
     (gl/glVertexAttribPointer pos
-                              (int (count vertices))
+                              (int 3)
                               GL_FLOAT (int 0) (int 0)
                               (flat-float-array vertices))
     (gl/glEnableVertexAttribArray pos)
-    (println [pos (count vertices) vertices  (:mvp (:indices context)) (:transform context)])
     (gl/glDrawArrays GL_TRIANGLES (int 0) (int 3))
     (gl/glDisableVertexAttribArray pos)))
 
