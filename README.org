@@ -249,24 +249,13 @@ We have drawn a rotating triangle using GLES via JNA.  This took
 longer than anticipated because anything involving FFI always takes
 longer than anticipated. 
 
-What we're going to need is 
-- a scene graph
-- some code to walk over it and render to opengl in a reasonably 
-efficient fashion
+We have a rudimentary scene graph in an atom and an opengl thread that
+gets woken up when the grah changes
 
+defone.ui=> (swap! the-scene update-in [2 1] #(+ 0.05 %))
+;; rotate by 0.05 radians
 
-I think we will need a half-decent glue layer on top of gles just to
-deal with the C-ishness (e.g. something that checks for errors), and
-then we can decide what we need in terms of actual UI/widgets
-
-One question we haven't yet had any good ideas about is whether the
-channel concept can be applied to output. OpenGL has the idea of
-"give me an array of vertices", maybe there's some commonality there.
-Otherwise our presentation layer is currently ad hoc and that seems
-wrong.
-
-Suspect that we are going to have to construct our own UI elements
-and treat GL as a good ay to draw polygons but not much more
+**** Widgets
 
 What do we need?
 - buttons (emit events on some channel when pushed)
@@ -279,11 +268,6 @@ Should UI widgets be able to reconfigure themselves dynamically
 values up to 600") or is that state we'd be better off without and
 should the parent widget destroy and create afresh?
 
-
-
-What happens when we have opengl-inside-opengl: e.g. a three-d app
-projecting its output onto the side face of a hexagon which the app
-carousel is controlling?
 
 *** Audio IO
 
