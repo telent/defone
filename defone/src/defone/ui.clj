@@ -105,7 +105,7 @@
 
 (defmulti draw-scene (fn [context key & more] key))
 
-(defmethod draw-scene :vertices [context key & vertices]
+(defmethod draw-vertices [context draw-mode vertices]
   ;; we could maybe be more effciient by calling gl-uniform-matrix
   ;; lazily but let's try it the easy way first
   (let [pos (:pos (:indices context))]
@@ -124,8 +124,11 @@
                               GL_FLOAT (int 0) (int 0)
                               (flat-float-array vertices))
     (gl/glEnableVertexAttribArray pos)
-    (gl/glDrawArrays GL_TRIANGLES (int 0) (int 3))
+    (gl/glDrawArrays draw-mode (int 0) (int 3))
     (gl/glDisableVertexAttribArray pos)))
+
+(defmethod draw-scene :triangles [context key & vertices]
+  (draw-vertices context GL_TRIANGLES vertices))
 
 (defmethod draw-scene :translate [context key vector child]
   (let [context (update-in context [:transform]
@@ -195,7 +198,7 @@
                  [:rotate-z (* 10 (/ Math/PI 180))
                   [:color [1 1 0 1]
                    [:aggregate :triangle
-                    [:vertices
+                    [:triangles
                      [-1 -1 0] [1 -1 0] [0 1 0]
                      ]]]]]))
 #_
