@@ -22,7 +22,15 @@
 (def GL_FLOAT (int 0x1406))
 (def GL_COLOR_BUFFER_BIT 0x00004000)
 (def GL_DEPTH_BUFFER_BIT 0x00000100)
-(def GL_TRIANGLES (int 0x0004))
+
+(def GL_POINTS                         (int 0x0000))
+(def GL_LINES                          (int 0x0001))
+(def GL_LINE_LOOP                      (int 0x0002))
+(def GL_LINE_STRIP                     (int 0x0003))
+(def GL_TRIANGLES                      (int 0x0004))
+(def GL_TRIANGLE_STRIP                 (int 0x0005))
+(def GL_TRIANGLE_FAN                   (int 0x0006))
+
 
 (defn gl-shader-type [name]
   (int (get {:fragment 0x8B30 :vertex 0x8B31} name)))
@@ -105,7 +113,7 @@
 
 (defmulti draw-scene (fn [context key & more] key))
 
-(defmethod draw-vertices [context draw-mode vertices]
+(defn draw-vertices [context draw-mode vertices]
   ;; we could maybe be more effciient by calling gl-uniform-matrix
   ;; lazily but let's try it the easy way first
   (let [pos (:pos (:indices context))]
@@ -124,33 +132,39 @@
                               GL_FLOAT (int 0) (int 0)
                               (flat-float-array vertices))
     (gl/glEnableVertexAttribArray pos)
-    (gl/glDrawArrays draw-mode (int 0) (int 3))
+    (gl/glDrawArrays draw-mode (int 0) (int (count vertices)))
     (gl/glDisableVertexAttribArray pos)))
 
-(defmethod draw-scene :triangles [context key & vertices]
+(defn draw-kids [context kids]
+  (doall (map #(apply draw-scene context %) kids)))
+
+(defmethod draw-scene :triangles [context key vertices]
   (draw-vertices context GL_TRIANGLES vertices))
 
-(defmethod draw-scene :translate [context key vector child]
+(defmethod draw-scene :triangle-strip [context key vertices]
+  (draw-vertices context GL_TRIANGLE_STRIP vertices))
+
+(defmethod draw-scene :translate [context key vector & children]
   (let [context (update-in context [:transform]
                            #(m/multiply (apply m/translate vector) %))]
-    (apply draw-scene context child)))
+    (draw-kids context children)))
 
-(defmethod draw-scene :rotate-z [context key angle child]
+(defmethod draw-scene :rotate-z [context key angle & children]
   (let [context (update-in context [:transform]
                            #(m/multiply (m/rotate-z angle) %))]
-    (apply draw-scene context child)))
+    (draw-kids context children)))
 
-(defmethod draw-scene :scale [context key factors child]
+(defmethod draw-scene :scale [context key factors & children]
   (let [context (update-in context [:transform]
                            #(m/multiply (apply m/scale factors) %))]
-    (apply draw-scene context child)))
+    (draw-kids context children)))
 
-(defmethod draw-scene :color [context key color child]
+(defmethod draw-scene :color [context key color & children]
   (let [context (update-in context [:color] (fn [x] color))]
-    (apply draw-scene context child)))
+    (draw-kids context children)))
 
-(defmethod draw-scene :aggregate [context key name & children]
-  (doall (map #(apply draw-scene context %) children)))
+(defmethod draw-scene :group [context key attributes & children]
+  (draw-kids context children))
 
 (defn paint [context scene]
   (let [context (merge
@@ -193,13 +207,33 @@
 (defn stop-render-thread [chan]
   (async/close! chan))
 
+(defn find-element-named [name tree]
+  (let [[type attrs & kids] tree]
+    (if (and (= type :group) (= (:name attrs) name))
+      tree
+      (some #(find-element-named name %) kids))))
+
 (def the-scene (atom
-                [:scale [0.5 0.5 0.5]
+                [:scale [0.1 0.1 0.1]
                  [:rotate-z (* 10 (/ Math/PI 180))
                   [:color [1 1 0 1]
-                   [:aggregate :triangle
+                   [:group {:name :triangle}
                     [:triangles
-                     [-1 -1 0] [1 -1 0] [0 1 0]
+                     [[-1 -1 0] [1 -1 0] [0 1 0]]
                      ]]]]]))
+#_
+ (swap! the-scene update-in [2 2 2 2] (constantly [:triangle-strip [[0 0 0] [1 2 0] [2 0 0] [3 2 0][4 0 0 ] [5 2 0]]]))
+
+#_
+(swap! the-scene (constantly
+                  [:scale [0.1 0.1 0.1]
+                   [:rotate-z (* 10 (/ Math/PI 180))
+                    [:color [1 1 0 1]
+                     [:group {:name :triangle}
+                      [:triangles
+                       [[-1 -1 0] [1 -1 0] [0 1 0]]
+                       ]]]]]))
+
+
 #_
 (def render-channel (start-render-thread the-scene))
