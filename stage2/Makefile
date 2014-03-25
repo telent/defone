@@ -16,7 +16,7 @@ download = curl $(1) -o $@
 	pkg-config libdrm2 libdrm-dev libdrm-omap1 x11proto-dri2-dev autoconf \
 	automake libtool autotools-dev vim-tiny strace bison bison \
 	flex gettext gettext libxml2-dev libexpat1-dev llvm-3.1-dev \
-	git openssh-client
+	git openssh-client libfreetype6-dev
 
 /usr/bin/java:
 	-groupadd messagebus 
