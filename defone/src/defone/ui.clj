@@ -186,6 +186,7 @@
                   :color attr-color
                   :mvp u-matrix}}]
     (println context)
+    (gl/glClear (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
     (loop []
       (and
        (let [scene (<!! chan)]
@@ -235,5 +236,4 @@
                        ]]]]]))
 
 
-#_
-(def render-channel (start-render-thread the-scene))
+(defonce render-channel (start-render-thread the-scene))
