@@ -98,33 +98,3 @@
 
 #_
 (read-stuff)
-
-#_
-(defn draw-triangle [frame pos col mvp]
-  (let [verts [[-1 -1]
-               [1  -1]
-               [0   1]]
-        cols [[1 0 0 1]
-              [0 1 0 1]
-              [0 0 1 1]]
-        matrix (matrix-multiply (matrix-rotate-z (* frame (/ Math/PI 180)))
-                                (matrix-scale 0.5 0.5 0.5))]
-
-    (gl-uniform-matrix mvp matrix)
-    (gl/glClear (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
-
-    (jna/invoke Integer GLESv2/glVertexAttribPointer
-                pos (int 2) GL_FLOAT (int 0) (int 0)
-                (flat-float-array verts))
-    (jna/invoke Integer GLESv2/glVertexAttribPointer
-                col (int 3) GL_FLOAT (int 0) (int 0)
-                (flat-float-array cols))
-
-    (jna/invoke Integer GLESv2/glEnableVertexAttribArray pos)
-    (jna/invoke Integer GLESv2/glEnableVertexAttribArray col)
-
-    (jna/invoke Integer GLESv2/glDrawArrays GL_TRIANGLES (int 0) (int 3))
-
-    (jna/invoke Integer GLESv2/glDisableVertexAttribArray pos)
-    (jna/invoke Integer GLESv2/glDisableVertexAttribArray col)
-    ))
