@@ -222,8 +222,21 @@
                     [:triangles
                      [[-1 -1 0] [1 -1 0] [0 1 0]]
                      ]]]]]))
+
+(defn new-vert [scene]
+  (swap! the-scene update-in [2 2 2 2] (constantly scene)))
+
+(defn read-raw-file [name]
+  (let [f (File. name)
+        l (. f length)
+        r (FileInputStream. f)
+        buf (byte-array l)]
+    (.read r buf 0 l)
+    buf))
+
 #_
- (swap! the-scene update-in [2 2 2 2] (constantly [:triangle-strip [[0 0 0] [1 2 0] [2 0 0] [3 2 0][4 0 0 ] [5 2 0]]]))
+(new-vert
+ [:triangle-strip [[0 0 0] [5 0 0] [0 5 0] [5 5 0]]])
 
 #_
 (swap! the-scene (constantly
