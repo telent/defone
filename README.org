@@ -1,9 +1,4 @@
--*- mode: Org; org-todo-keywords '((sequence "TODO" "DOING" "DONE"))
-#+begin_html
-<embed src="defone-logo.svg" width=400 type="image/svg+xml" />
-#+end_html
-
-(defone): "The Habitable Phone OS"
+(defone) - The Habitable Phone OS
 
 * Intro
 
