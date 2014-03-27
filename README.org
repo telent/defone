@@ -1,4 +1,4 @@
-(defone): "The Habitable Phone OS"
+(defone) - The Habitable Phone OS
 
 * Intro
 
