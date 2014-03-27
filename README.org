@@ -1,16 +1,15 @@
--*- mode: Org; org-todo-keywords '((sequence "TODO" "DOING" "DONE"))
-#+begin_html
-<embed src="defone-logo.svg" width=400 type="image/svg+xml" />
-#+end_html
-
 (defone): "The Habitable Phone OS"
 
 * Intro
 
-Current phone operating systems that treat apps as monoliths.  The
-goal of this project is (eventually) to replace this with small
-general-purpose components which can be strung together according to
-user needs.  
+Current phone operating systems treat apps as monoliths.  If you have
+one app that does 80% of what you want and another that does a
+different 50% of what you want, you have two apps and neither of them
+meets your need.
+
+The goal of this project is (eventually) to replace the monolithic app
+ecosystem with small general-purpose components which can be strung
+together according to user needs.
 
 ** How?
 
@@ -56,16 +55,17 @@ it complicated.  Modularity FTW: if we can run (defone) on any
 powerful-enough hardware that runs a rooted Android, that gives us
 many more potential target hardware devices.
 
+
 * Current status / TODO
 
 (Very) rough, (not at all) ready.  
 
 Next tasks: 
-- chop up defone.core into separate namespaces
+- write text to the screen as a texture
 - make the touch event data drive the graphics being generated
+- chop up defone.core into separate namespaces
 
-** Infrastrcuture
-*** chroot (Debian) / more or less functional
+** Stage 1 Infrastructure - crossbuild a chroot
 
 I've built a chroot with Debian in it and some make targets to get it
 onto my phone.  I have tested this works with CyanogenMod (which is
@@ -76,7 +76,7 @@ though.  By which I mean to say, an actual phone will be much faster.
 
     $ sudo -E make -C rootfs
 
-with your phone connected on USB.  This 
+on a Debian system, with your phone connected on USB.  This 
 
 - creates a Debian chroot
 - install rsync on the phone with adb push
@@ -86,22 +86,23 @@ with your phone connected on USB.  This
 
 As with anything based on Make, it may not work.  
 
+** Stage 2 infrastructure - native compilation
+
+The stage2 build runs on the device itself. Although the Makefile that
+builds and installs the chroot is supposed to kick off a stage2 build,
+it currently fails due to some search path problem I haven't taken the
+time to figure out yet.  ssh into the phone then run
+
+    # make -C /defone/stage2
+
+to restart it by hand
+
 *** graphics (Mesa) / working but slow
 
 I spent a good while chasing down various rabbit holes in the hope of
 getting hw-accelerated GL on my particular phone (Galaxy Nexus).
 Eventually I wrote that off as an exercise for Future Me and now just
 use Mesa instead.
-
-Builing Mesa is one of the targets of the stage2 build (i.e. it is
-built natively by the phone).  Although the Makefile that builds and
-installs the chroot is supposed to kick off a stage2 build, it
-currently fails due to some search path problem I haven't taken the
-time to figure out yet.  ssh into the phone then run
-
-    # make -C /defone/stage2
-
-to restart it by hand
 
 Allegedly it builds with llvmpipe, but casual use says it's no faster than
 boring old softpipe.  But that could easily be because I haven't
@@ -174,6 +175,8 @@ an existing session instead of having to recreate context on each request.
 
 Would we expect it to be better than emacs?  Would we expect it to be
 emacs?  Light table?
+
+** Application code
 
 *** Touchscreen
 
@@ -254,6 +257,52 @@ gets woken up when the grah changes
 
 defone.ui=> (swap! the-scene update-in [2 1] #(+ 0.05 %))
 ;; rotate by 0.05 radians
+
+**** Text
+
+to draw text we need to render it into a buffer using libfreetype,
+then apply that buffer as a texture
+
+http://www.raywenderlich.com/4404/opengl-es-2-0-for-iphone-tutorial-part-2-textures
+
+// textures in GL are named using numbers.  get the next available one
+GLuint texName;
+glGenTextures(1, &texName); 
+// it's a 2d texture
+glBindTexture(GL_TEXTURE_2D, texName);
+// finer points of how it interpolates values 
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
+ 
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, 
+             GL_RGBA, GL_UNSIGNED_BYTE, the_raw_data);
+
+... then in the vertex shader declarations
+
+attribute vec2 TexCoordIn; 
+varying vec2 TexCoordOut;
+
+and in the body
+
+    TexCoordOut = TexCoordIn; 
+
+and in the fragment shader
+
+varying lowp vec4 DestinationColor;
+varying lowp vec2 TexCoordOut; // New
+uniform sampler2D Texture; // New
+ 
+void main(void) {
+    gl_FragColor = DestinationColor * texture2D(Texture, TexCoordOut); // New
+}
+
+(wtf is lowp?)
+
+
+
+
+
+
+
 
 **** Widgets
 
