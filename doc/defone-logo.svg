@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.3.1 r9886"
+   sodipodi:docname="defone-logo.svg">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4562496"
+     inkscape:cx="399.1622"
+     inkscape:cy="847.18601"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1306"
+     inkscape:window-height="673"
+     inkscape:window-x="192"
+     inkscape:window-y="7"
+     inkscape:window-maximized="0"
+     showguides="true"
+     inkscape:guide-bbox="true" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:120px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:-0.31999999px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:none;stroke:#000000;stroke-opacity:1;font-family:Liberation Sans;-inkscape-font-specification:Liberation Sans Bold"
+       x="182.67407"
+       y="223.96806"
+       id="text4089"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4091"
+         x="182.67407"
+         y="223.96806">defone</tspan></text>
+    <path
+       id="path3763"
+       style="fill:#ffffff;stroke:#e90000;stroke-opacity:1"
+       d="m 167.5,224.50778 0,44.35432 6.84688,0 c 0.0156,1.9e-4 0.0311,0 0.0467,0 l 2.92102,0 c 2.31537,0 4.1829,-2.10994 4.1829,-4.72585 l 0,-34.91582 c 0,-2.61591 -1.86753,-4.71265 -4.1829,-4.71265 l -2.92102,0 c -0.0156,0 -0.0311,-1.9e-4 -0.0467,0 l -6.84688,0 z m -2.32779,43.22225 c 0,0 -31.88845,-4.42758 -31.88845,-77.55592 0,-73.12835 31.95264,-80.81501 31.95264,-80.81501 l 0.0626,43.77687 c -2.80341,-0.0481 -4.91796,3.83441 -6.3488,10.41745 -1.43085,6.58303 -2.17799,15.86661 -2.24658,26.62069 0.11725,18.88116 3.4876,33.83907 6.35422,33.63873 l 0.81697,0 1.27084,0 m 0,-0.10256 0,43.79189 M 167.5,108.89506 l 0,44.35432 6.84688,0 c 0.0156,1.9e-4 0.0311,0 0.0467,0 l 2.92102,0 c 2.31537,0 4.1829,-2.10994 4.1829,-4.72585 l 0,-34.91582 c 0,-2.61591 -1.86753,-4.71265 -4.1829,-4.71265 l -2.92102,0 c -0.0156,0 -0.0311,-1.9e-4 -0.0467,0 l -6.84688,0 z" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#path3763"
+       id="use3785"
+       transform="matrix(-1,0,0,1,756.74704,-1.8272569e-6)"
+       width="744.09448"
+       height="1052.3622" />
+  </g>
+</svg>
