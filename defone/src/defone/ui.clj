@@ -77,7 +77,7 @@
     (jna/invoke Integer GLESv2/glLinkProgram program)
     (jna/invoke Integer GLESv2/glGetProgramiv program GL_LINK_STATUS success?)
     (if (zero? (aget success? 0))
-      (let [err (char-array 1000)
+      (let [err (byte-array 1000)
             len (int-array [0])]
         (jna/invoke Integer GLESv2/glGetProgramInfoLog
                     program (int 1000) len err)
