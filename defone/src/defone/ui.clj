@@ -249,6 +249,37 @@
     (.read r buf 0 l)
     buf))
 
+(defn load-texture [data width height]
+  (let [name (int-array 1)]
+    ;; get a "name" (a.k.a number)
+    (jna/invoke Integer GLESv2/glGenTextures (int 1) name)
+    ;; make texture target TEXTURE_2D point to our new name
+    (jna/invoke Integer GLESv2/glBindTexture
+                GL_TEXTURE_2D (aget name 0))
+    ;; "Here we're setting the GL_TEXTURE_MIN_FILTER (the case where
+    ;; we have to shrink the texture for far away objects) to
+    ;; GL_NEAREST (when drawing a vertex, choose the closest
+    ;; corresponding texture pixel)."
+    (jna/invoke Integer GLESv2/glTexParameteri
+                GL_TEXTURE_2D
+                GL_TEXTURE_MIN_FILTER
+                GL_NEAREST)
+    ;; send the data across
+    (jna/invoke Integer GLESv2/glTexImage2D
+                GL_TEXTURE_2D ; target
+                (int 0)       ; detail level
+                GL_RGBA       ; internal format
+                (int width) (int height)
+                (int 0)             ; border width
+                GL_RGBA             ; data format
+                GL_UNSIGNED_BYTE    ; data type
+                data)
+    (aget name 0)))
+
+(def bath-texture
+  (load-texture (read-raw-file "/defone/bathtime.raw") 309 341))
+
+
 (def the-scene (atom
                 [:scale [0.1 0.1 0.1]
                  [:rotate-z (* 10 (/ Math/PI 180))
