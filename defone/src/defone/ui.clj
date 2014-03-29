@@ -241,9 +241,6 @@
       tree
       (some #(find-element-named name %) kids))))
 
-(defn new-vert [scene]
-  (swap! the-scene update-in [2 2 2 2] (constantly scene)))
-
 (defn read-raw-file [name]
   (let [f (File. name)
         l (. f length)
@@ -264,6 +261,10 @@
                      [:triangles
                       [[-1 -1 0] [1 -1 0] [0 1 0]]
                       ]]]]]]))
+
+(defn new-vert [scene]
+  (swap! the-scene update-in [2 2 2 2 2] (constantly scene)))
+
 
 #_
 (new-vert
