@@ -121,10 +121,12 @@
   (gl/glUniform4fv (int index) (int 1) (flat-float-array vals)))
 
 (defn gl-attribute-index [program name]
-  (int (jna/invoke Integer GLESv2/glGetAttribLocation program name)))
+  (let [i (jna/invoke Integer GLESv2/glGetAttribLocation program name)]
+    (and (>= i 0) (int i))))
 
 (defn gl-uniform-index [program name]
-  (int (jna/invoke Integer GLESv2/glGetUniformLocation program name)))
+ (let [i (jna/invoke Integer GLESv2/glGetUniformLocation program name)]
+    (and (>= i 0) (int i))))
 
 ;;;;;;
 
