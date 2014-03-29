@@ -204,16 +204,16 @@
     (apply draw-scene context scene)
     (clogl/cloglure_swap_buffers)))
 
+(defn initial-context [program]
+  {:indices
+   {:position (gl-attribute-index program "pos")
+    :color (gl-uniform-index program "color")
+    :mvp (gl-uniform-index program "modelviewProjection")}})
+
 (defn render-loop [chan]
   (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")
         program (create-shaders)
-        attr-position (gl-attribute-index program "pos")
-        attr-color (gl-uniform-index program "color")
-        u-matrix (gl-uniform-index program "modelviewProjection")
-        context {:indices
-                 {:position attr-position
-                  :color attr-color
-                  :mvp u-matrix}}]
+        context (initial-context program)]
     (println context)
     (gl/glClear (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
     (loop []
