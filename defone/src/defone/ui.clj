@@ -10,11 +10,15 @@
                            Integer cloglure_get_display])
 (jna/to-ns egl EGL [Integer eglGetError])
 (jna/to-ns gl GLESv2 [Integer glUniformMatrix4fv,
+                      Integer glUniform1i,
                       Integer glUniform4fv,
                       Integer glVertexAttribPointer,
                       Integer glEnableVertexAttribArray,
                       Integer glDrawArrays,
                       Integer glDisableVertexAttribArray,
+                      Integer glActiveTexture,
+                      Integer glBindTexture,
+                      Integer glGetError,
                       Integer glClear])
 
 (def GL_COMPILE_STATUS (int 0x8b81))
@@ -31,6 +35,17 @@
 (def GL_TRIANGLE_STRIP                 (int 0x0005))
 (def GL_TRIANGLE_FAN                   (int 0x0006))
 
+(def GL_TEXTURE_2D (int 0x0DE1))
+(def GL_TEXTURE_MIN_FILTER (int 0x2801))
+(def GL_NEAREST (int 0x2600))
+(def GL_RGBA (int 0x1908))
+(def GL_UNSIGNED_BYTE (int 0x1401))
+
+(def GL_TEXTURE0 (int 0x84c0))
+(def GL_TEXTURE1 (int 0x84c1))
+(def GL_TEXTURE2 (int 0x84c2))
+(def GL_TEXTURE3 (int 0x84c3))
+(def GL_TEXTURE4 (int 0x84c4))
 
 (defn gl-shader-type [name]
   (int (get {:fragment 0x8B30 :vertex 0x8B31} name)))
