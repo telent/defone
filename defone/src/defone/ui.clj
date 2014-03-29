@@ -129,7 +129,7 @@
 (defmulti draw-scene (fn [context key & more] key))
 
 (defn draw-vertices [context draw-mode vertices]
-  ;; we could maybe be more effciient by calling gl-uniform-matrix
+  ;; we could maybe be more efficient by calling gl-uniform-matrix
   ;; lazily but let's try it the easy way first
   (let [pos (:pos (:indices context))]
     (gl-uniform-matrix (:mvp (:indices context)) (:transform context))
