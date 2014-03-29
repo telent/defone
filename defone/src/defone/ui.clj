@@ -2,7 +2,9 @@
   (:require [defone.matrix :as m]
             [clojure.core.async :as async
              :refer [chan >!! <!! >! <! go ]]
-            [net.n01se.clojure-jna :as jna]))
+            [net.n01se.clojure-jna :as jna])
+  (:import [java.io File FileInputStream]))
+
 
 (jna/to-ns clogl cloglure [Integer cloglure_start,
                            Integer cloglure_stop,
