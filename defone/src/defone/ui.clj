@@ -133,9 +133,9 @@
 (defn draw-vertices [context draw-mode vertices]
   ;; we could maybe be more efficient by calling gl-uniform-matrix
   ;; lazily but let's try it the easy way first
-  (let [pos (:pos (:indices context))]
-    (gl-uniform-matrix (:mvp (:indices context)) (:transform context))
-    (gl-uniform4 (:color (:indices context)) (:color context))
+  (let [indices (:indices context)]
+    (gl-uniform-matrix (:mvp indices) (:transform context))
+    (gl-uniform4 (:color indices) (:color context))
 
     ;; XXX I suspect this only works by accident.  Last arg is
     ;; supposed to be "offset of the first component of the first
@@ -144,13 +144,13 @@
     ;; not bound any buffers, so ... probably only works because we have
     ;; software-only mesa and "gpu" memory is system memory
 
-    (gl/glVertexAttribPointer pos
+    (gl/glVertexAttribPointer (:pos indices)
                               (int 3)
                               GL_FLOAT (int 0) (int 0)
                               (flat-float-array vertices))
-    (gl/glEnableVertexAttribArray pos)
+    (gl/glEnableVertexAttribArray (:pos indices))
     (gl/glDrawArrays draw-mode (int 0) (int (count vertices)))
-    (gl/glDisableVertexAttribArray pos)))
+    (gl/glDisableVertexAttribArray (:pos indices))))
 
 (defn draw-kids [context kids]
   (doall (map #(apply draw-scene context %) kids)))
@@ -298,18 +298,7 @@
 
 
 #_
-(new-vert
- [:triangle-strip [[0 0 0] [5 0 0] [0 5 0] [5 5 0]]])
-
-#_
-(swap! the-scene (constantly
-                  [:scale [0.1 0.1 0.1]
-                   [:rotate-z (* 10 (/ Math/PI 180))
-                    [:color [1 1 0 1]
-                     [:group {:name :triangle}
-                      [:triangles
-                       [[-1 -1 0] [1 -1 0] [0 1 0]]
-                       ]]]]]))
+(defone.ui/new-vert  [:triangle-strip [[0 0 0] [5 0 0] [0 5 0] [5 5 0]]])
 
 
 (defonce render-channel (start-render-thread the-scene))
