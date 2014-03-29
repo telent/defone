@@ -183,6 +183,16 @@
 (defmethod draw-scene :group [context key attributes & children]
   (draw-kids context children))
 
+(defmethod draw-scene :texture [context key texture & children]
+  (let [name (:name texture)
+        vert (:vertices texture)
+        context (merge context
+                       {:texture-name name
+                        :texture-verts vert})]
+    (draw-kids context children)))
+
+
+
 (defn paint [context scene]
   (let [context (merge
                  {:transform (m/scale 1 1 1)
@@ -231,15 +241,6 @@
       tree
       (some #(find-element-named name %) kids))))
 
-(def the-scene (atom
-                [:scale [0.1 0.1 0.1]
-                 [:rotate-z (* 10 (/ Math/PI 180))
-                  [:color [1 1 0 1]
-                   [:group {:name :triangle}
-                    [:triangles
-                     [[-1 -1 0] [1 -1 0] [0 1 0]]
-                     ]]]]]))
-
 (defn new-vert [scene]
   (swap! the-scene update-in [2 2 2 2] (constantly scene)))
 
@@ -250,6 +251,19 @@
         buf (byte-array l)]
     (.read r buf 0 l)
     buf))
+
+(def the-scene (atom
+                [:scale [0.1 0.1 0.1]
+                 [:rotate-z (* 10 (/ Math/PI 180))
+                  [:color [1 1 0 1]
+                   [:texture {:name bath-texture
+                              :vertices
+                              [[0 0] [1 0] [0 1] [1 1]]
+                              }
+                    [:group {:name :triangle}
+                     [:triangles
+                      [[-1 -1 0] [1 -1 0] [0 1 0]]
+                      ]]]]]]))
 
 #_
 (new-vert
