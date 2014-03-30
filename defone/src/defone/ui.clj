@@ -38,6 +38,7 @@
 (def GL_TRIANGLE_FAN                   (int 0x0006))
 
 (def GL_TEXTURE_2D (int 0x0DE1))
+(def GL_TEXTURE_MAG_FILTER (int 0x2800))
 (def GL_TEXTURE_MIN_FILTER (int 0x2801))
 (def GL_NEAREST (int 0x2600))
 (def GL_RGBA (int 0x1908))
@@ -92,8 +93,10 @@
               :fragment
               ["precision mediump float;"
                "varying vec4 v_color;"
+               "varying vec2 v_texture_st;"
+               "uniform sampler2D texture;"
                "void main() {"
-               "  gl_FragColor = v_color;"
+               "  gl_FragColor = v_color * texture2D(texture, v_texture_st);"
                "}"])
         vert (gl-make-shader
               :vertex
@@ -101,9 +104,13 @@
                "attribute vec4 pos;"
                "uniform vec4 color;"
                "varying vec4 v_color;"
+               "attribute vec2 texture_st;"
+               "varying vec2 v_texture_st;"
+
                "void main() {"
                "   gl_Position = modelviewProjection * pos;"
                "   v_color = color;"
+               "   v_texture_st = texture_st;"
                "}"])]
     (assert frag)
     (assert vert)
@@ -137,7 +144,28 @@
   ;; lazily but let's try it the easy way first
   (let [indices (:indices context)]
     (gl-uniform-matrix (:mvp indices) (:transform context))
-    (gl-uniform4 (:color indices) (:color context))
+    (println [:in-draw-vertices context])
+    (if (:color indices)
+      (gl-uniform4 (:color indices) (:color context)))
+
+    ;; tell the shader which texture unit we're using
+    (gl/glUniform1i (:texture-index context) (int 0))
+    (println (gl/glGetError))
+
+    ;; activate TEXTURE0 unit and bind our named texture into it
+    (gl/glActiveTexture GL_TEXTURE0)
+    (gl/glBindTexture GL_TEXTURE_2D (:texture-name context))
+
+    (jna/invoke Integer GLESv2/glTexParameteri
+                GL_TEXTURE_2D
+                GL_TEXTURE_MIN_FILTER
+                GL_NEAREST)
+    (jna/invoke Integer GLESv2/glTexParameteri
+                GL_TEXTURE_2D
+                GL_TEXTURE_MAG_FILTER
+                GL_NEAREST)
+    (println (gl/glGetError))
+
 
     ;; XXX I suspect this only works by accident.  Last arg is
     ;; supposed to be "offset of the first component of the first
@@ -151,8 +179,20 @@
                               GL_FLOAT (int 0) (int 0)
                               (flat-float-array vertices))
     (gl/glEnableVertexAttribArray (:pos indices))
+    (println (gl/glGetError))
+
+    (gl/glVertexAttribPointer (:texture-st-index context)
+                              (int 2)
+                              GL_FLOAT (int 0) (int 0)
+                              (flat-float-array (:texture-verts context)))
+    (gl/glEnableVertexAttribArray (:texture-st-index context))
+    (println (gl/glGetError))
+
     (gl/glDrawArrays draw-mode (int 0) (int (count vertices)))
-    (gl/glDisableVertexAttribArray (:pos indices))))
+
+    (gl/glDisableVertexAttribArray (:pos indices))
+    (gl/glDisableVertexAttribArray (:texture-st-index context))
+    ))
 
 (defn draw-kids [context kids]
   (doall (map #(apply draw-scene context %) kids)))
@@ -186,11 +226,15 @@
   (draw-kids context children))
 
 (defmethod draw-scene :texture [context key texture & children]
-  (let [name (:name texture)
+  (let [name ((:name texture))
         vert (:vertices texture)
-        context (merge context
-                       {:texture-name name
-                        :texture-verts vert})]
+        program (:program context)
+        context (merge
+                 context
+                 {:texture-name name
+                  :texture-index (gl-uniform-index program "texture")
+                  :texture-st-index (gl-attribute-index program "texture_st")
+                  :texture-verts vert})]
     (draw-kids context children)))
 
 
@@ -198,14 +242,15 @@
 (defn paint [context scene]
   (let [context (merge
                  {:transform (m/scale 1 1 1)
-                  :color [0 1 1 1]}
+                  :color [0 0.1 0.1 1]}
                  context)]
     (gl/glClear (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
     (apply draw-scene context scene)
     (clogl/cloglure_swap_buffers)))
 
 (defn initial-context [program]
-  {:indices
+  {:program program
+   :indices
    {:position (gl-attribute-index program "pos")
     :color (gl-uniform-index program "color")
     :mvp (gl-uniform-index program "modelviewProjection")}})
@@ -237,12 +282,6 @@
 (defn stop-render-thread [chan]
   (async/close! chan))
 
-(defn find-element-named [name tree]
-  (let [[type attrs & kids] tree]
-    (if (and (= type :group) (= (:name attrs) name))
-      tree
-      (some #(find-element-named name %) kids))))
-
 (defn read-raw-file [name]
   (let [f (File. name)
         l (. f length)
@@ -255,6 +294,7 @@
   (let [name (int-array 1)]
     ;; get a "name" (a.k.a number)
     (jna/invoke Integer GLESv2/glGenTextures (int 1) name)
+    (gl/glActiveTexture GL_TEXTURE0)
     ;; make texture target TEXTURE_2D point to our new name
     (jna/invoke Integer GLESv2/glBindTexture
                 GL_TEXTURE_2D (aget name 0))
@@ -265,6 +305,10 @@
     (jna/invoke Integer GLESv2/glTexParameteri
                 GL_TEXTURE_2D
                 GL_TEXTURE_MIN_FILTER
+                GL_NEAREST)
+    (jna/invoke Integer GLESv2/glTexParameteri
+                GL_TEXTURE_2D
+                GL_TEXTURE_MAG_FILTER
                 GL_NEAREST)
     ;; send the data across
     (jna/invoke Integer GLESv2/glTexImage2D
@@ -278,17 +322,17 @@
                 data)
     (aget name 0)))
 
-(def bath-texture
+(defn bath-texture []
   (load-texture (read-raw-file "/defone/bathtime.raw") 309 341))
 
 
 (def the-scene (atom
                 [:scale [0.1 0.1 0.1]
                  [:rotate-z (* 10 (/ Math/PI 180))
-                  [:color [1 1 0 1]
+                  [:color [0.8 0.8 1.0 1]
                    [:texture {:name bath-texture
                               :vertices
-                              [[0 0] [1 0] [0 1] [1 1]]
+                              [[0 1] [1 1] [0 0] [1 0]]
                               }
                     [:group {:name :triangle}
                      [:triangles
@@ -303,4 +347,9 @@
 (defone.ui/new-vert  [:triangle-strip [[0 0 0] [5 0 0] [0 5 0] [5 5 0]]])
 
 
-(defonce render-channel (start-render-thread the-scene))
+(defonce render-channel (atom nil))
+(defn restart []
+  (if @render-channel
+    (stop-render-thread @render-channel))
+  (reset! render-channel (start-render-thread the-scene)))
+(restart)
