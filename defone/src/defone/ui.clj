@@ -237,12 +237,6 @@
 (defn stop-render-thread [chan]
   (async/close! chan))
 
-(defn find-element-named [name tree]
-  (let [[type attrs & kids] tree]
-    (if (and (= type :group) (= (:name attrs) name))
-      tree
-      (some #(find-element-named name %) kids))))
-
 (defn read-raw-file [name]
   (let [f (File. name)
         l (. f length)
