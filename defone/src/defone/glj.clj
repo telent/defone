@@ -17,6 +17,7 @@
                       Integer glActiveTexture,
                       Integer glBindTexture,
                       Integer glGetError,
+                      Integer glTexParameteri,
                       Integer glClear])
 
 (def GL_COMPILE_STATUS (int 0x8b81))
@@ -47,7 +48,9 @@
 (def GL_TEXTURE4 (int 0x84c4))
 
 (defn flat-float-array [matrix]
-  (float-array (flatten matrix)))(defn shader-type [name]
+  (float-array (flatten matrix)))
+
+(defn shader-type [name]
   (int (get {:fragment 0x8B30 :vertex 0x8B31} name)))
 
 (defn make-shader [type text]
@@ -86,12 +89,14 @@
       program)))
 
 (defn attribute-index [program name]
-  (let [i (jna/invoke Integer GLESv2/glGetAttribLocation program name)]
+  (let [i (jna/invoke Integer GLESv2/glGetAttribLocation
+                      (int program) name)]
     (and (>= i 0) (int i))))
 
 (defn uniform-index [program name]
- (let [i (jna/invoke Integer GLESv2/glGetUniformLocation program name)]
-    (and (>= i 0) (int i))))
+ (let [i (jna/invoke Integer GLESv2/glGetUniformLocation
+                     (int program) name)]
+   (and (>= i 0) (int i))))
 
 (defn uniform-matrix [index matrix]
   (gl/glUniformMatrix4fv

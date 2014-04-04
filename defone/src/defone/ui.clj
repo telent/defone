@@ -7,6 +7,13 @@
   (:import [java.io File FileInputStream]))
 
 
+(defmacro checked [& args]
+  `(let [ret# ~args
+         err# (gl/glGetError)]
+     (print '~(first args) [~@(rest args)] "==>" ret# "\n")
+     (if (> err# 0) (println "GL error " err#))
+     ret#))
+
 (defn compile-glsl-program [{:keys [attributes uniforms varyings shaders]}]
   (let [format-decls (fn [vtype mapp]
                        (map (fn [[n t]] (print-str vtype (name t) (name n) ";"))
@@ -35,16 +42,12 @@
      }))
 
 
-
-(defmulti draw-scene (fn [context key & more] key))
-
-
 (defn draw-vertices [context draw-mode attributes]
   (let [vars (:program context)]
-    (glj/uniform-matrix (:mvp (:uniforms vars)) (:transform context))
+    (checked glj/uniform-matrix (:mvp (:uniforms vars)) (:transform context))
 
     (if-let [col (:color (:uniforms vars))]
-      (glj/uniform4 col (:color context)))
+      (checked glj/uniform4 col (:color context)))
 
     ;; XXX I suspect this only works by accident.  Last arg is
     ;; supposed to be "offset of the first component of the first
@@ -55,28 +58,23 @@
     (doall
      (map (fn [attribute]
             (let [data (get attributes attribute)
-                  index (get (:attributes vars) attribute)
-                  size (count (first data))]
-              (println [:index index
-                        :data (seq (glj/flat-float-array data))
-                        :size size])
-              (gl/glVertexAttribPointer index
-                                        (int size)
+                  index (int (get (:attributes vars) attribute))
+                  size (int (count (first data)))]
+              (checked gl/glVertexAttribPointer index
+                                        size
                                         glj/GL_FLOAT (int 0) (int 0)
                                         (glj/flat-float-array data))
-              (gl/glEnableVertexAttribArray index)
-              (println (gl/glGetError))))
+              (checked gl/glEnableVertexAttribArray index)
+              ))
           (keys attributes)))
 
     (let [len (count (first (vals attributes)))]
-      (println [:len len])
-      (gl/glDrawArrays draw-mode (int 0) (int len)))
+      (checked gl/glDrawArrays draw-mode (int 0) (int len)))
 
     (doall
      (map (fn [attribute]
-            (let [index (get (:attributes vars) attribute)]
-              (gl/glDisableVertexAttribArray index)
-              (println [:disable index (gl/glGetError) ])))
+            (let [index (int (get (:attributes vars) attribute))]
+              (checked gl/glDisableVertexAttribArray index)))
           (keys attributes)))
 
     ))
@@ -84,47 +82,40 @@
 (defn draw-kids [context kids]
   (doall (map #(apply draw-scene context %) kids)))
 
+
+(defmulti draw-scene (fn [context key & more] key))
+
 (defmethod draw-scene :vertices [context key attr vertices]
-  (println [:vertices attr vertices])
   (condp = (:mode attr)
     :triangles (draw-vertices context glj/GL_TRIANGLES vertices)
     :triangle-strip (draw-vertices context glj/GL_TRIANGLE_STRIP vertices)))
 
 (defmethod draw-scene :scene [context key attr & children]
-  (println :scene)
-  (println ["draw-scene" context children])
   (draw-kids context children))
 
 (defmethod draw-scene :translate [context key vector & children]
-  (println :translate)
   (let [context (update-in context [:transform]
                            #(m/multiply (apply m/translate vector) %))]
     (draw-kids context children)))
 
 (defmethod draw-scene :rotate-z [context key angle & children]
-  (println :rotate-z)
   (let [context (update-in context [:transform]
                            #(m/multiply (m/rotate-z angle) %))]
     (draw-kids context children)))
 
-
 (defmethod draw-scene :scale [context key factors & children]
-  (println :scale)
   (let [context (update-in context [:transform]
                            #(m/multiply (apply m/scale factors) %))]
     (draw-kids context children)))
 
 (defmethod draw-scene :color [context key color & children]
-  (println :color)
   (let [context (update-in context [:color] (fn [x] color))]
     (draw-kids context children)))
 
 (defmethod draw-scene :group [context key attributes & children]
-  (println :group)
   (draw-kids context children))
 
 (defmethod draw-scene :program [context key attributes & children]
-  (println :program)
   (let [num (:index attributes)
         context (update-in context [:program] (fn [x] attributes))]
     (jna/invoke Integer GLESv2/glUseProgram (int num))
@@ -132,27 +123,23 @@
 
 
 (defmethod draw-scene :texture [context key attributes & children]
-  (println [:texture attributes])
   (let [name (:name attributes)
         uniform (:texture (:uniforms (:program context)))]
     ;; tell the shader which texture unit we're using
-    (println [:uniform uniform])
-    (gl/glUniform1i uniform (int 0))
-    (println (gl/glGetError))
+    (checked gl/glUniform1i (int uniform) (int 0))
 
     ;; activate TEXTURE0 unit and bind our named texture into it
-    (gl/glActiveTexture glj/GL_TEXTURE0)
-    (gl/glBindTexture glj/GL_TEXTURE_2D name)
+    (checked gl/glActiveTexture glj/GL_TEXTURE0)
+    (checked gl/glBindTexture glj/GL_TEXTURE_2D (int name))
 
-    (jna/invoke Integer GLESv2/glTexParameteri
-                glj/GL_TEXTURE_2D
-                glj/GL_TEXTURE_MIN_FILTER
-                glj/GL_NEAREST)
-    (jna/invoke Integer GLESv2/glTexParameteri
-                glj/GL_TEXTURE_2D
-                glj/GL_TEXTURE_MAG_FILTER
-                glj/GL_NEAREST)
-    (println (gl/glGetError))
+    (checked gl/glTexParameteri
+             glj/GL_TEXTURE_2D
+             glj/GL_TEXTURE_MIN_FILTER
+             glj/GL_NEAREST)
+    (checked gl/glTexParameteri
+             glj/GL_TEXTURE_2D
+             glj/GL_TEXTURE_MAG_FILTER
+             glj/GL_NEAREST)
 
     (draw-kids context children)))
 
@@ -183,7 +170,6 @@
 
 
 (defn render-loop [chan]
-  (println [:loop chan])
   (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")]
     (gl/glClear (int (bit-or glj/GL_COLOR_BUFFER_BIT glj/GL_DEPTH_BUFFER_BIT)))
     (loop [scene [:scene {} ]]
@@ -202,7 +188,6 @@
 (defn stop-render-thread [chan]
   (async/close! chan))
 
-(println "hi render channe")
 (defonce render-channel
   (let [c (async/chan)]
     (future (do
@@ -211,7 +196,6 @@
                    (catch Exception e (str "caught " e " in render thread")))))
     c))
 
-(println "lo render channe")
 (defn read-raw-file [name]
   (let [f (File. name)
         l (. f length)
@@ -221,8 +205,6 @@
     buf))
 
 (def bath-texture-data (read-raw-file "/defone/bathtime.raw"))
-
-
 
 (def my-program
   {:attributes {:pos :vec4
@@ -243,13 +225,13 @@
               "  gl_FragColor = v_color * texture2D(texture, v_texture_st);"
               "}"]}})
 
-(def the-scene [:scale [0.1 0.1 0.1]
-                [:rotate-z (* 10 (/ Math/PI 180))
+(def the-scene [:scale [0.2 0.2 0.2]
+                [:rotate-z (* 5 (/ Math/PI 180))
                  [:color [0.8 0.8 1.0 1]
                   [:program my-program
                    [:texture {:data bath-texture-data :width 309 :height 341}
                     [:vertices {:mode :triangle-strip}
-                     {:pos [[1 1 1] [5 1 1] [1 5 1] [5 5 1]]
+                     {:pos [[-2 -2 -1] [2 -2 -1] [2 2 -1] [2 2 -1]]
                       :texture_st [[0 1] [1 1] [0 0] [1 0]]}]
                     ]]]]])
 #_
