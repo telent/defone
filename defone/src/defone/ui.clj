@@ -10,7 +10,7 @@
 (defmacro checked [& args]
   `(let [ret# ~args
          err# (gl/glGetError)]
-     (print '~(first args) [~@(rest args)] "==>" ret# "\n")
+     #_(print '~(first args) [~@(rest args)] "==>" ret# "\n")
      (if (> err# 0) (println "GL error " err#))
      ret#))
 
