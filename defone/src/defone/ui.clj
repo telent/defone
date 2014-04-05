@@ -79,11 +79,12 @@
 
     ))
 
+
+(defmulti draw-scene (fn [context key & more] key))
+
 (defn draw-kids [context kids]
   (doall (map #(apply draw-scene context %) kids)))
 
-
-(defmulti draw-scene (fn [context key & more] key))
 
 (defmethod draw-scene :vertices [context key attr vertices]
   (condp = (:mode attr)
@@ -168,6 +169,14 @@
       :vertices tree
       (cons key (cons attr (kids))))))
 
+(defn read-raw-file [name]
+  (let [f (File. name)
+        l (. f length)
+        r (FileInputStream. f)
+        buf (byte-array l)]
+    (.read r buf 0 l)
+    buf))
+
 
 (defn render-loop [chan]
   (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")]
@@ -196,13 +205,6 @@
                    (catch Exception e (str "caught " e " in render thread")))))
     c))
 
-(defn read-raw-file [name]
-  (let [f (File. name)
-        l (. f length)
-        r (FileInputStream. f)
-        buf (byte-array l)]
-    (.read r buf 0 l)
-    buf))
 
 (def bath-texture-data (read-raw-file "/defone/bathtime.raw"))
 
