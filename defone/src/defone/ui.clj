@@ -157,17 +157,18 @@
 (defn compile-glsl-in-graph [tree]
   (let [[key attr & k] tree
         kids #(map compile-glsl-in-graph k)]
-    (condp = key
-      :program (cons :program
-                     (cons (compile-glsl-program attr) (kids)))
-      :texture (cons :texture
-                     (cons (assoc attr :name
-                                  (glj/load-texture (:data attr)
-                                                    (:width attr)
-                                                    (:height attr)))
-                           (kids)))
-      :vertices tree
-      (cons key (cons attr (kids))))))
+    (vec
+     (condp = key
+       :program (cons :program
+                      (cons (compile-glsl-program attr) (kids)))
+       :texture (cons :texture
+                      (cons (assoc attr :name
+                                   (glj/load-texture (:data attr)
+                                                     (:width attr)
+                                                     (:height attr)))
+                            (kids)))
+       :vertices tree
+       (cons key (cons attr (kids)))))))
 
 (defn read-raw-file [name]
   (let [f (File. name)
