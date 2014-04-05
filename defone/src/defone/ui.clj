@@ -177,21 +177,23 @@
     (.read r buf 0 l)
     buf))
 
+(defonce the-scene (atom [:scene {} ]))
 
 (defn render-loop [chan]
   (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")]
     (gl/glClear (int (bit-or glj/GL_COLOR_BUFFER_BIT glj/GL_DEPTH_BUFFER_BIT)))
-    (loop [scene [:scene {} ]]
-      (when scene
-        (println ["paintig scene " scene])
-        (paint {} scene)
+    (loop [running true]
+      (when running
+        (println ["paintig scene " @the-scene])
+        (paint {} @the-scene)
         (println "done painting")
         (recur
-         (let [[keys replacement] (<!! chan)]
+         (let [[keys replacement] (<!! chan)
+               compiled (compile-glsl-in-graph replacement)]
            (println ["got update at " keys])
-           (and keys
-                (update-in scene keys
-                           (fn [old] (compile-glsl-in-graph replacement))))))))
+           (when keys
+             (swap! the-scene update-in keys (fn [old] compiled))
+             keys)))))
     (clogl/cloglure_stop fb0)))
 
 (defn stop-render-thread [chan]
@@ -205,6 +207,8 @@
                    (catch Exception e (str "caught " e " in render thread")))))
     c))
 
+(defn replace-tree-at [path replacement]
+  (>!! render-channel [path replacement]))
 
 (def bath-texture-data (read-raw-file "/defone/bathtime.raw"))
 
@@ -227,14 +231,16 @@
               "  gl_FragColor = v_color * texture2D(texture, v_texture_st);"
               "}"]}})
 
-(def the-scene [:scale [0.2 0.2 0.2]
-                [:rotate-z (* 5 (/ Math/PI 180))
-                 [:color [0.8 0.8 1.0 1]
-                  [:program my-program
-                   [:texture {:data bath-texture-data :width 309 :height 341}
-                    [:vertices {:mode :triangle-strip}
-                     {:pos [[-2 -2 -1] [2 -2 -1] [2 2 -1] [2 2 -1]]
-                      :texture_st [[0 1] [1 1] [0 0] [1 0]]}]
-                    ]]]]])
+(def example-scene
+  [:scale [0.1 0.1 0.1]
+   [:rotate-z (* 25 (/ Math/PI 180))
+    [:color [0.8 0.8 1.0 1]
+     [:program my-program
+      [:texture {:data bath-texture-data :width 309 :height 341}
+       [:vertices {:mode :triangle-strip}
+        {:pos [[-2 -2 -1] [2 -2 -1] [2 2 -1] [2 2 -1]]
+         :texture_st [[0 1] [1 1] [0 0] [1 0]]}]
+       ]]]]])
+
 #_
 (>!! render-channel [[2] the-scene])
