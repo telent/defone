@@ -118,7 +118,7 @@
 (defmethod draw-scene :program [context key attributes & children]
   (let [num (:index attributes)
         context (update-in context [:program] (fn [x] attributes))]
-    (jna/invoke Integer GLESv2/glUseProgram (int num))
+    (checked gl/glUseProgram (int num))
     (draw-kids context children)))
 
 

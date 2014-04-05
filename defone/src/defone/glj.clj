@@ -18,6 +18,7 @@
                       Integer glActiveTexture,
                       Integer glBindTexture,
                       Integer glGetError,
+                      Integer glUseProgram,
                       Integer glTexParameteri,
                       Integer glClear])
 
