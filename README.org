@@ -258,47 +258,10 @@ defone.ui=> (swap! the-scene update-in [2 1] #(+ 0.05 %))
 **** Text
 
 to draw text we need to render it into a buffer using libfreetype,
-then apply that buffer as a texture
+then apply that buffer as a texture.
 
-http://www.raywenderlich.com/4404/opengl-es-2-0-for-iphone-tutorial-part-2-textures
-
-// textures in GL are named using numbers.  get the next available one
-GLuint texName;
-glGenTextures(1, &texName); 
-// it's a 2d texture
-glBindTexture(GL_TEXTURE_2D, texName);
-// finer points of how it interpolates values 
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
- 
-glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, 
-             GL_RGBA, GL_UNSIGNED_BYTE, the_raw_data);
-
-... then in the vertex shader declarations
-
-attribute vec2 TexCoordIn; 
-varying vec2 TexCoordOut;
-
-and in the body
-
-    TexCoordOut = TexCoordIn; 
-
-and in the fragment shader
-
-varying lowp vec4 DestinationColor;
-varying lowp vec2 TexCoordOut; // New
-uniform sampler2D Texture; // New
- 
-void main(void) {
-    gl_FragColor = DestinationColor * texture2D(Texture, TexCoordOut); // New
-}
-
-(wtf is lowp?)
-
-
-
-
-
-
+So far we have managed to render an image as a texture, next bit is
+to do the call to freetype 
 
 
 **** Widgets
