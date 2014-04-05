@@ -1,6 +1,7 @@
 (ns defone.glj
   (:require [net.n01se.clojure-jna :as jna])
-  (:import [java.io File FileInputStream]))
+  (:import [java.io File FileInputStream]
+           [com.sun.jna Memory]))
 
 (jna/to-ns clogl cloglure [Integer cloglure_start,
                            Integer cloglure_stop,
@@ -48,7 +49,12 @@
 (def GL_TEXTURE4 (int 0x84c4))
 
 (defn flat-float-array [matrix]
-  (float-array (flatten matrix)))
+  (let [floats (float-array (flatten matrix))
+        num (alength floats)
+        m (com.sun.jna.Memory. (* 4 num))]
+    (.write m 0 floats 0 num)
+    m))
+
 
 (defn shader-type [name]
   (int (get {:fragment 0x8B30 :vertex 0x8B31} name)))
