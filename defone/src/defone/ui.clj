@@ -148,6 +148,7 @@
     (clogl/cloglure_swap_buffers)))
 
 
+
 (defn compile-glsl-in-graph [tree]
   (let [[key attr & k] tree
         kids #(map compile-glsl-in-graph k)]
@@ -184,11 +185,17 @@
         (println "done painting")
         (recur
          (let [[keys replacement] (<!! chan)
-               compiled (compile-glsl-in-graph replacement)]
+               compiled
+               (if (= (last keys) 2)
+                 ;; only compile if it's a subtree, not a value on a
+                 ;; branch
+                 (compile-glsl-in-graph replacement)
+                 replacement)]
            (println ["got update at " keys])
            (when keys
              (swap! the-scene update-in keys (fn [old] compiled))
              keys)))))
+    (println "render thread quit")
     (clogl/cloglure_stop fb0)))
 
 (defn stop-render-thread [chan]
@@ -243,4 +250,4 @@
        ]]]]])
 
 #_
-(>!! render-channel [[2] the-scene])
+(replace-tree-at [2] example-scene)
