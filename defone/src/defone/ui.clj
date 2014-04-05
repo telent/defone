@@ -49,12 +49,6 @@
     (if-let [col (:color (:uniforms vars))]
       (checked glj/uniform4 col (:color context)))
 
-    ;; XXX I suspect this only works by accident.  Last arg is
-    ;; supposed to be "offset of the first component of the first
-    ;; generic vertex attribute in the array in the data store of the
-    ;; buffer currently bound to the GL_ARRAY_BUFFER target", but we have
-    ;; not bound any buffers, so ... perhaps only works because we have
-    ;; software-only mesa and "gpu" memory is system memory
     (doall
      (map (fn [attribute]
             (let [data (get attributes attribute)
@@ -210,6 +204,11 @@
 
 (defn replace-tree-at [path replacement]
   (>!! render-channel [path replacement]))
+
+
+
+
+;;;;;;
 
 (def bath-texture-data (read-raw-file "/defone/bathtime.raw"))
 
