@@ -138,15 +138,14 @@
 
     (draw-kids context children)))
 
-(defn paint [context scene]
-  (let [context (merge
-                 {:transform (m/scale 1 1 1)
-                  :color [0 0.1 0.1 1]}
-                 context)]
+(defn paint [scene]
+  (let [context {:transform (m/scale 1 1 1)
+                 :color [0 0.1 0.1 1]}]
+    #_(println ["paintig scene " scene])
     (gl/glClear (int (bit-or glj/GL_COLOR_BUFFER_BIT  glj/GL_DEPTH_BUFFER_BIT)))
     (apply draw-scene context scene)
-    (clogl/cloglure_swap_buffers)))
-
+    (clogl/cloglure_swap_buffers)
+    #_(println "done painting")))
 
 
 (defn compile-glsl-in-graph [tree]
@@ -180,9 +179,7 @@
     (gl/glClear (int (bit-or glj/GL_COLOR_BUFFER_BIT glj/GL_DEPTH_BUFFER_BIT)))
     (loop [running true]
       (when running
-        (println ["paintig scene " @the-scene])
-        (paint {} @the-scene)
-        (println "done painting")
+        (paint @the-scene)
         (recur
          (let [[keys replacement] (<!! chan)
                compiled
@@ -239,13 +236,13 @@
               "}"]}})
 
 (def example-scene
-  [:scale [0.1 0.1 0.1]
+  [:scale [0.5 0.5 0.5]
    [:rotate-z (* 25 (/ Math/PI 180))
     [:color [0.8 0.8 1.0 1]
      [:program my-program
       [:texture {:data bath-texture-data :width 309 :height 341}
        [:vertices {:mode :triangle-strip}
-        {:pos [[-2 -2 -1] [2 -2 -1] [2 2 -1] [2 2 -1]]
+        {:pos [[0 0 -1] [2 0 -1] [0 2 -1] [2 2 -1]]
          :texture_st [[0 1] [1 1] [0 0] [1 0]]}]
        ]]]]])
 
