@@ -5,6 +5,8 @@
 
 (jna/to-ns ft freetype [Integer FT_Init_FreeType
                         Integer FT_New_Face
+                        Integer FT_Set_Char_Size
+                        Integer FT_Get_Char_Index
                         ])
 
 (defmacro checked [& args]
@@ -21,8 +23,7 @@
 (defn new-face [name]
   (let [x (int-array 1)]
     (checked ft/FT_New_Face ft-library
-             name
-             0 x)
+             name (int 0) x)
     (aget x 0)))
 
 #_
