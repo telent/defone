@@ -1,6 +1,8 @@
 set -ex
 killall dropbear || true
 killall rsync || true
+killall dbus-daemon || true
+killall avahi-daemon ||true
 for i in  `grep data/debian /proc/mounts | cut -f2 -d' ' |tac  ` ;do
   umount $i
 done

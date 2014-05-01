@@ -1,16 +1,15 @@
--*- mode: Org; org-todo-keywords '((sequence "TODO" "DOING" "DONE"))
-#+begin_html
-<embed src="defone-logo.svg" width=400 type="image/svg+xml" />
-#+end_html
-
-(defone): "The Habitable Phone OS"
+(defone) - The Habitable Phone OS
 
 * Intro
 
-Current phone operating systems that treat apps as monoliths.  The
-goal of this project is (eventually) to replace this with small
-general-purpose components which can be strung together according to
-user needs.  
+Current phone operating systems treat apps as monoliths.  If you have
+one app that does 80% of what you want and another that does a
+different 50% of what you want, you have two apps and neither of them
+meets your need.
+
+The goal of this project is (eventually) to replace the monolithic app
+ecosystem with small general-purpose components which can be strung
+together according to user needs.
 
 ** How?
 
@@ -56,16 +55,17 @@ it complicated.  Modularity FTW: if we can run (defone) on any
 powerful-enough hardware that runs a rooted Android, that gives us
 many more potential target hardware devices.
 
+
 * Current status / TODO
 
 (Very) rough, (not at all) ready.  
 
 Next tasks: 
-- chop up defone.core into separate namespaces
+- write text to the screen as a texture
 - make the touch event data drive the graphics being generated
+- chop up defone.core into separate namespaces
 
-** Infrastrcuture
-*** chroot (Debian) / more or less functional
+** Stage 1 Infrastructure - crossbuild a chroot
 
 I've built a chroot with Debian in it and some make targets to get it
 onto my phone.  I have tested this works with CyanogenMod (which is
@@ -76,7 +76,7 @@ though.  By which I mean to say, an actual phone will be much faster.
 
     $ sudo -E make -C rootfs
 
-with your phone connected on USB.  This 
+on a Debian system, with your phone connected on USB.  This 
 
 - creates a Debian chroot
 - install rsync on the phone with adb push
@@ -86,22 +86,23 @@ with your phone connected on USB.  This
 
 As with anything based on Make, it may not work.  
 
+** Stage 2 infrastructure - native compilation
+
+The stage2 build runs on the device itself. Although the Makefile that
+builds and installs the chroot is supposed to kick off a stage2 build,
+it currently fails due to some search path problem I haven't taken the
+time to figure out yet.  ssh into the phone then run
+
+    # make -C /defone/stage2
+
+to restart it by hand
+
 *** graphics (Mesa) / working but slow
 
 I spent a good while chasing down various rabbit holes in the hope of
 getting hw-accelerated GL on my particular phone (Galaxy Nexus).
 Eventually I wrote that off as an exercise for Future Me and now just
 use Mesa instead.
-
-Builing Mesa is one of the targets of the stage2 build (i.e. it is
-built natively by the phone).  Although the Makefile that builds and
-installs the chroot is supposed to kick off a stage2 build, it
-currently fails due to some search path problem I haven't taken the
-time to figure out yet.  ssh into the phone then run
-
-    # make -C /defone/stage2
-
-to restart it by hand
 
 Allegedly it builds with llvmpipe, but casual use says it's no faster than
 boring old softpipe.  But that could easily be because I haven't
@@ -143,23 +144,20 @@ Screen 0 Modes:
 
 *** JDK, Leiningen / installed
 
-in stage2 build
+The stage2 build copies /defone/defone/ onto the device.  This is a
+bog-standard clojure project created by "lein new"
 
-*** Actual Clojure code
-
-The stage2 build copies /defone/defone/ onto the device.  This is 
-a bog-standard clojure project created by "lein new"
-
-It's not autostarted yet: probably we will spin up a headless nrepl
-on port 9990 (  ✆ / U+2706 /Telephone Location Sign) and maybe have it
-respawn on exit.
+To start it, run start.sh.  This brings up an nrepl server on port 
+9990 (  ✆ / U+2706 /Telephone Location Sign) - eventually we will
+autorun this and have it respawn on error, but not for as long as it
+has to fight Dalvik for RAM
 
 It is a bit sucky having everything in one clojure project because it
 means bringing the whole platform down whenever we want to add another
 library - or whenever for any reason we get the JVM into a bad state
 and need to restart it.  Definitely a topic we will need to revisit.
 
-*** Standalone hacking
+*** Standalone hacking / TODO
 
 It is a goal that we can develop directly on the device without being
 dependent on some other machine with an SDK/special software
@@ -174,6 +172,8 @@ an existing session instead of having to recreate context on each request.
 
 Would we expect it to be better than emacs?  Would we expect it to be
 emacs?  Light table?
+
+** Application code
 
 *** Touchscreen
 
@@ -254,6 +254,15 @@ gets woken up when the grah changes
 
 defone.ui=> (swap! the-scene update-in [2 1] #(+ 0.05 %))
 ;; rotate by 0.05 radians
+
+**** Text
+
+to draw text we need to render it into a buffer using libfreetype,
+then apply that buffer as a texture.
+
+So far we have managed to render an image as a texture, next bit is
+to do the call to freetype 
+
 
 **** Widgets
 

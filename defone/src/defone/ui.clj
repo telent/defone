@@ -1,148 +1,92 @@
 (ns defone.ui
   (:require [defone.matrix :as m]
+            [defone.glj :as glj]
             [clojure.core.async :as async
              :refer [chan >!! <!! >! <! go ]]
-            [net.n01se.clojure-jna :as jna]))
-
-(jna/to-ns clogl cloglure [Integer cloglure_start,
-                           Integer cloglure_stop,
-                           Integer cloglure_swap_buffers,
-                           Integer cloglure_get_display])
-(jna/to-ns egl EGL [Integer eglGetError])
-(jna/to-ns gl GLESv2 [Integer glUniformMatrix4fv,
-                      Integer glUniform4fv,
-                      Integer glVertexAttribPointer,
-                      Integer glEnableVertexAttribArray,
-                      Integer glDrawArrays,
-                      Integer glDisableVertexAttribArray,
-                      Integer glClear])
-
-(def GL_COMPILE_STATUS (int 0x8b81))
-(def GL_LINK_STATUS (int 0x8B82))
-(def GL_FLOAT (int 0x1406))
-(def GL_COLOR_BUFFER_BIT 0x00004000)
-(def GL_DEPTH_BUFFER_BIT 0x00000100)
-
-(def GL_POINTS                         (int 0x0000))
-(def GL_LINES                          (int 0x0001))
-(def GL_LINE_LOOP                      (int 0x0002))
-(def GL_LINE_STRIP                     (int 0x0003))
-(def GL_TRIANGLES                      (int 0x0004))
-(def GL_TRIANGLE_STRIP                 (int 0x0005))
-(def GL_TRIANGLE_FAN                   (int 0x0006))
+            [net.n01se.clojure-jna :as jna])
+  (:import [java.io File FileInputStream]))
 
 
-(defn gl-shader-type [name]
-  (int (get {:fragment 0x8B30 :vertex 0x8B31} name)))
+(defmacro checked [& args]
+  `(let [ret# ~args
+         err# (gl/glGetError)]
+     #_(print '~(first args) [~@(rest args)] "==>" ret# "\n")
+     (if (> err# 0) (println "GL error " err#))
+     ret#))
 
-(defn gl-make-shader [type text]
-  (let [typenum (gl-shader-type type)
-        shader (int (jna/invoke Integer GLESv2/glCreateShader typenum))
-        string (clojure.string/join "\n" text)
-        compiled? (int-array [42])]
-    (jna/invoke Integer GLESv2/glShaderSource
-                shader
-                (int 1)
-                (into-array String [string])
-                (int 0))
-    (jna/invoke Integer GLESv2/glCompileShader shader)
-    (jna/invoke Integer GLESv2/glGetShaderiv shader GL_COMPILE_STATUS compiled?)
-    (if (zero? (aget compiled? 0))
-      (let [err (char-array 1000)
-            len (int-array [0])]
-        (jna/invoke Integer GLESv2/glGetShaderInfoLog
-                    shader (int 1000) len err)
-        (println (clojure.string/trim (String. err)))))
-    (and (not (zero? (aget compiled? 0))) shader)))
-
-(defn gl-make-program [shaders]
-  (let [program (int (jna/invoke Integer GLESv2/glCreateProgram))
-        success? (int-array [0])]
-    (doall (map #(jna/invoke Integer GLESv2/glAttachShader program %) shaders))
-    (jna/invoke Integer GLESv2/glLinkProgram program)
-    (jna/invoke Integer GLESv2/glGetProgramiv program GL_LINK_STATUS success?)
-    (if (zero? (aget success? 0))
-      (let [err (char-array 1000)
-            len (int-array [0])]
-        (jna/invoke Integer GLESv2/glGetProgramInfoLog
-                    program (int 1000) len err)
-        (println (clojure.string/trim (String. err)))
-        nil)
-      (do (jna/invoke Integer GLESv2/glUseProgram program) program))))
-
-(defn create-shaders []
-  (let [frag (gl-make-shader
-              :fragment
-              ["precision mediump float;"
-               "varying vec4 v_color;"
-               "void main() {"
-               "  gl_FragColor = v_color;"
-               "}"])
-        vert (gl-make-shader
-              :vertex
-              ["uniform mat4 modelviewProjection;"
-               "attribute vec4 pos;"
-               "uniform vec4 color;"
-               "varying vec4 v_color;"
-               "void main() {"
-               "   gl_Position = modelviewProjection * pos;"
-               "   v_color = color;"
-               "}"])]
-    (assert frag)
-    (assert vert)
-    (gl-make-program [frag vert])))
+(defn compile-glsl-program [{:keys [attributes uniforms varyings shaders]}]
+  (let [format-decls (fn [vtype mapp]
+                       (map (fn [[n t]] (print-str vtype (name t) (name n) ";"))
+                            mapp))
+        fragment-shader-src (concat ["precision mediump float;"]
+                                    (format-decls "uniform" uniforms)
+                                    (format-decls "varying" varyings)
+                                    (:fragment shaders))
+        fragment-shader (glj/make-shader :fragment fragment-shader-src)
+        vertex-shader-src (concat ["precision mediump float;"]
+                                  (format-decls "uniform" uniforms)
+                                  (format-decls "varying" varyings)
+                                  (format-decls "attribute" attributes)
+                                  (:vertex shaders))
+        vertex-shader (glj/make-shader :vertex vertex-shader-src)
+        program (glj/make-program [fragment-shader vertex-shader])]
+    {:index program
+     :uniforms (reduce (fn [m n] (assoc m
+                                   n (glj/uniform-index program (name n))))
+                       {}
+                       (keys uniforms))
+     :attributes (reduce (fn [m n] (assoc m
+                                     n (glj/attribute-index program (name n))))
+                         {}
+                         (keys attributes))
+     }))
 
 
-(defn flat-float-array [matrix]
-  (float-array (flatten matrix)))
+(defn draw-vertices [context draw-mode attributes]
+  (let [vars (:program context)]
+    (checked glj/uniform-matrix (:mvp (:uniforms vars)) (:transform context))
 
-(defn gl-uniform-matrix [index matrix]
-  (gl/glUniformMatrix4fv
-   (int index) (int 1) (int 0) (flat-float-array matrix)))
+    (if-let [col (:color (:uniforms vars))]
+      (checked glj/uniform4 col (:color context)))
 
-(defn gl-uniform4 [index vals]
-  (gl/glUniform4fv (int index) (int 1) (flat-float-array vals)))
+    (doall
+     (map (fn [attribute]
+            (let [data (get attributes attribute)
+                  index (int (get (:attributes vars) attribute))
+                  size (int (count (first data)))]
+              (checked gl/glVertexAttribPointer index
+                                        size
+                                        glj/GL_FLOAT (int 0) (int 0)
+                                        (glj/flat-float-array data))
+              (checked gl/glEnableVertexAttribArray index)
+              ))
+          (keys attributes)))
 
-(defn gl-attribute-index [program name]
-  (int (jna/invoke Integer GLESv2/glGetAttribLocation program name)))
+    (let [len (count (first (vals attributes)))]
+      (checked gl/glDrawArrays draw-mode (int 0) (int len)))
 
-(defn gl-uniform-index [program name]
-  (int (jna/invoke Integer GLESv2/glGetUniformLocation program name)))
+    (doall
+     (map (fn [attribute]
+            (let [index (int (get (:attributes vars) attribute))]
+              (checked gl/glDisableVertexAttribArray index)))
+          (keys attributes)))
 
-;;;;;;
+    ))
+
 
 (defmulti draw-scene (fn [context key & more] key))
-
-(defn draw-vertices [context draw-mode vertices]
-  ;; we could maybe be more effciient by calling gl-uniform-matrix
-  ;; lazily but let's try it the easy way first
-  (let [pos (:pos (:indices context))]
-    (gl-uniform-matrix (:mvp (:indices context)) (:transform context))
-    (gl-uniform4 (:color (:indices context)) (:color context))
-
-    ;; XXX I suspect this only works by accident.  Last arg is
-    ;; supposed to be "offset of the first component of the first
-    ;; generic vertex attribute in the array in the data store of the
-    ;; buffer currently bound to the GL_ARRAY_BUFFER target", but we have
-    ;; not bound any buffers, so ... probably only works because we have
-    ;; software-only mesa and "gpu" memory is system memory
-
-    (gl/glVertexAttribPointer pos
-                              (int 3)
-                              GL_FLOAT (int 0) (int 0)
-                              (flat-float-array vertices))
-    (gl/glEnableVertexAttribArray pos)
-    (gl/glDrawArrays draw-mode (int 0) (int (count vertices)))
-    (gl/glDisableVertexAttribArray pos)))
 
 (defn draw-kids [context kids]
   (doall (map #(apply draw-scene context %) kids)))
 
-(defmethod draw-scene :triangles [context key vertices]
-  (draw-vertices context GL_TRIANGLES vertices))
 
-(defmethod draw-scene :triangle-strip [context key vertices]
-  (draw-vertices context GL_TRIANGLE_STRIP vertices))
+(defmethod draw-scene :vertices [context key attr vertices]
+  (condp = (:mode attr)
+    :triangles (draw-vertices context glj/GL_TRIANGLES vertices)
+    :triangle-strip (draw-vertices context glj/GL_TRIANGLE_STRIP vertices)))
+
+(defmethod draw-scene :scene [context key attr & children]
+  (draw-kids context children))
 
 (defmethod draw-scene :translate [context key vector & children]
   (let [context (update-in context [:transform]
@@ -166,74 +110,141 @@
 (defmethod draw-scene :group [context key attributes & children]
   (draw-kids context children))
 
-(defn paint [context scene]
-  (let [context (merge
-                 {:transform (m/scale 1 1 1)
-                  :color [0 1 1 1]}
-                 context)]
-    (gl/glClear (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
+(defmethod draw-scene :program [context key attributes & children]
+  (let [num (:index attributes)
+        context (update-in context [:program] (fn [x] attributes))]
+    (checked gl/glUseProgram (int num))
+    (draw-kids context children)))
+
+
+(defmethod draw-scene :texture [context key attributes & children]
+  (let [name (:name attributes)
+        uniform (:texture (:uniforms (:program context)))]
+    ;; tell the shader which texture unit we're using
+    (checked gl/glUniform1i (int uniform) (int 0))
+
+    ;; activate TEXTURE0 unit and bind our named texture into it
+    (checked gl/glActiveTexture glj/GL_TEXTURE0)
+    (checked gl/glBindTexture glj/GL_TEXTURE_2D (int name))
+
+    (checked gl/glTexParameteri
+             glj/GL_TEXTURE_2D
+             glj/GL_TEXTURE_MIN_FILTER
+             glj/GL_NEAREST)
+    (checked gl/glTexParameteri
+             glj/GL_TEXTURE_2D
+             glj/GL_TEXTURE_MAG_FILTER
+             glj/GL_NEAREST)
+
+    (draw-kids context children)))
+
+(defn paint [scene]
+  (let [context {:transform (m/scale 1 1 1)
+                 :color [0 0.1 0.1 1]}]
+    #_(println ["paintig scene " scene])
+    (gl/glClear (int (bit-or glj/GL_COLOR_BUFFER_BIT  glj/GL_DEPTH_BUFFER_BIT)))
     (apply draw-scene context scene)
-    (clogl/cloglure_swap_buffers)))
+    (clogl/cloglure_swap_buffers)
+    #_(println "done painting")))
+
+
+(defn compile-glsl-in-graph [tree]
+  (let [[key attr & k] tree
+        kids #(map compile-glsl-in-graph k)]
+    (vec
+     (condp = key
+       :program (cons :program
+                      (cons (compile-glsl-program attr) (kids)))
+       :texture (cons :texture
+                      (cons (assoc attr :name
+                                   (glj/load-texture (:data attr)
+                                                     (:width attr)
+                                                     (:height attr)))
+                            (kids)))
+       :vertices tree
+       (cons key (cons attr (kids)))))))
+
+(defn read-raw-file [name]
+  (let [f (File. name)
+        l (. f length)
+        r (FileInputStream. f)
+        buf (byte-array l)]
+    (.read r buf 0 l)
+    buf))
+
+(defonce the-scene (atom [:scene {} ]))
 
 (defn render-loop [chan]
-  (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")
-        program (create-shaders)
-        attr-position (gl-attribute-index program "pos")
-        attr-color (gl-uniform-index program "color")
-        u-matrix (gl-uniform-index program "modelviewProjection")
-        context {:indices
-                 {:position attr-position
-                  :color attr-color
-                  :mvp u-matrix}}]
-    (println context)
-    (gl/glClear (int (bit-or GL_COLOR_BUFFER_BIT  GL_DEPTH_BUFFER_BIT)))
-    (loop []
-      (and
-       (let [scene (<!! chan)]
-         (if scene
-           (do
-             (println ["scene " scene])
-             (paint context scene)
-             true)))
-       (recur)))
+  (let [fb0 (clogl/cloglure_start "/dev/graphics/fb0")]
+    (gl/glClear (int (bit-or glj/GL_COLOR_BUFFER_BIT glj/GL_DEPTH_BUFFER_BIT)))
+    (loop [running true]
+      (when running
+        (paint @the-scene)
+        (recur
+         (let [[keys replacement] (<!! chan)
+               compiled
+               (if (= (last keys) 2)
+                 ;; only compile if it's a subtree, not a value on a
+                 ;; branch
+                 (compile-glsl-in-graph replacement)
+                 replacement)]
+           (println ["got update at " keys])
+           (when keys
+             (swap! the-scene update-in keys (fn [old] compiled))
+             keys)))))
+    (println "render thread quit")
     (clogl/cloglure_stop fb0)))
 
-
-(defn start-render-thread [scene-atom]
-  (let [c (async/chan)]
-    (future (defone.ui/render-loop c))
-    (add-watch scene-atom :render
-               (fn [key ref old new] (>!! c new)))
-    c))
 (defn stop-render-thread [chan]
   (async/close! chan))
 
-(defn find-element-named [name tree]
-  (let [[type attrs & kids] tree]
-    (if (and (= type :group) (= (:name attrs) name))
-      tree
-      (some #(find-element-named name %) kids))))
+(defonce render-channel
+  (let [c (async/chan)]
+    (future (do
+              (println "start render thread")
+              (try (defone.ui/render-loop c)
+                   (catch Exception e (str "caught " e " in render thread")))))
+    c))
 
-(def the-scene (atom
-                [:scale [0.1 0.1 0.1]
-                 [:rotate-z (* 10 (/ Math/PI 180))
-                  [:color [1 1 0 1]
-                   [:group {:name :triangle}
-                    [:triangles
-                     [[-1 -1 0] [1 -1 0] [0 1 0]]
-                     ]]]]]))
+(defn replace-tree-at [path replacement]
+  (>!! render-channel [path replacement]))
+
+
+
+
+;;;;;;
+
+(def bath-texture-data (read-raw-file "/defone/bathtime.raw"))
+
+(def my-program
+  {:attributes {:pos :vec4
+                :texture_st :vec2}
+   :uniforms {:mvp :mat4
+              :color :vec4
+              :texture :sampler2D}
+   :varyings {:v_color :vec4
+              :v_texture_st :vec2}
+   :shaders {:vertex
+             ["void main() {"
+              "   gl_Position = mvp * pos;"
+              "   v_color = color;"
+              "   v_texture_st = texture_st;"
+              "}"]
+             :fragment
+             ["void main() {"
+              "  gl_FragColor = v_color * texture2D(texture, v_texture_st);"
+              "}"]}})
+
+(def example-scene
+  [:scale [0.5 0.5 0.5]
+   [:rotate-z (* 25 (/ Math/PI 180))
+    [:color [0.8 0.8 1.0 1]
+     [:program my-program
+      [:texture {:data bath-texture-data :width 309 :height 341}
+       [:vertices {:mode :triangle-strip}
+        {:pos [[0 0 -1] [2 0 -1] [0 2 -1] [2 2 -1]]
+         :texture_st [[0 1] [1 1] [0 0] [1 0]]}]
+       ]]]]])
+
 #_
- (swap! the-scene update-in [2 2 2 2] (constantly [:triangle-strip [[0 0 0] [1 2 0] [2 0 0] [3 2 0][4 0 0 ] [5 2 0]]]))
-
-#_
-(swap! the-scene (constantly
-                  [:scale [0.1 0.1 0.1]
-                   [:rotate-z (* 10 (/ Math/PI 180))
-                    [:color [1 1 0 1]
-                     [:group {:name :triangle}
-                      [:triangles
-                       [[-1 -1 0] [1 -1 0] [0 1 0]]
-                       ]]]]]))
-
-
-(defonce render-channel (start-render-thread the-scene))
+(replace-tree-at [2] example-scene)

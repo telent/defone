@@ -9,5 +9,7 @@ test -d /data/debian/sys/bus || mount -t sysfs /sys /data/debian/sys
 test -f /data/debian/system/bin/stop || mount -o bind /system /data/debian/system
 /data/debian/busybox.android chroot /data/debian /bin/bash -c "PATH=/bin:/sbin:/usr/bin:/usr/sbin:$PATH  /var/lib/dpkg/info/dash.preinst install"
 /data/debian/busybox.android chroot /data/debian /bin/bash -c "PATH=/bin:/sbin:/usr/bin:/usr/sbin:$PATH DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true LC_ALL=C LANGUAGE=C LANG=C  dpkg --configure -a"
+/data/debian/busybox.android chroot /data/debian /bin/sh -x /etc/init.d/dbus start   
+/data/debian/busybox.android chroot /data/debian /usr/sbin/avahi-daemon -D --no-drop-root
 /data/debian/busybox.android chroot /data/debian /bin/sh -x /etc/init.d/dropbear start   
 # PATH=/bin:/usr/bin:/sbin:/usr/sbin:$PATH chroot /data/debian /bin/bash
