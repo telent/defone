@@ -30,19 +30,13 @@
 #_
 (def face (new-face "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf"))
 
-#_
-(seq (let [r (int-array 10)] (.read (.getPointer (.getPointer face 84) 76)w 0 r 0 5) r))
-
-
-
-
 (defn set-char-size [face width height hdpi vdpi]
   (checked ft/FT_Set_Char_Size
            face
-           (* width 64)
-           (* height 64)
-           hdpi
-           vdpi))
+           (int (* width 64))
+           (int (* height 64))
+           (int hdpi)
+           (int vdpi)))
 
 (defn get-char-index [face code]
   (ft/FT_Get_Char_Index (int face) (int code)))
@@ -72,15 +66,3 @@
   (load-char face char)
   (let [glyph-slot (.getPointer face face-glyph-offset)]
     (bitmap-from-pointer (.share glyph-slot glyph-bitmap-offset))))
-
-#_
-(defn frog [string bitmap x y]
-  (let [face (new-face "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf")]
-    (set-char-size face 12 0 316 316)))
-;#    (doall (map #(get-char-index face %) string)
-;#      load-glyph
-;#      render-glyph
-;#      slot=face->glyph
-;#      slot->bitmap_top is distance from baseline to
-;#      face->glyph->bitmap, face->glyph->bitmap_left, face->glyph->bitmap_top
-;#     glyph-indexes)))
