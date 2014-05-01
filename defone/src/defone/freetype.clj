@@ -47,6 +47,18 @@
 (defn load-char [face code]
   (checked ft/FT_Load_Char face (int code) FT_LOAD_RENDER))
 
+; only works for FT_PIXEL_MODE_GRAY which has one pixel per byte
+(defn aart-row [array]
+  (clojure.string/join
+   (map #(cond (> % 128) \* (= % 0) \space :else \.) array)))
+
+(defn aart-bitmap [bitmap]
+  (let [p (:pitch bitmap)
+        d (:data bitmap)]
+    (clojure.string/join
+     "\n"
+     (map #(aart-row (.getByteArray d (* % p) p)) (range 0 (:rows bitmap))))))
+
 (defn bitmap-from-pointer [buf]
   {:rows (.getInt buf 0)
    :width (.getInt buf 4)
