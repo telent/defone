@@ -1,0 +1,15 @@
+* Next steps
+** TODO freetype bitmaps -> gl texture
+
+Maybe use a string->(seq of bitmap) function where each bitmap element
+has the data and the h width and whatever else, and our gl glue can
+consume it and copy each glyph into whatever texture it's using.
+
+** put bluetooth in arch diagram
+
+* Stuff to tidy up
+** TODO create an avahi user
+
+Dunno why the package installation didn't do this for us.
+
+** org mode vs <pre> ?
