@@ -1,5 +1,4 @@
 (defone) - The Habitable Phone OS
-
 * Intro
 
 Current phone operating systems treat apps as monoliths.  If you have
@@ -56,16 +55,14 @@ powerful-enough hardware that runs a rooted Android, that gives us
 many more potential target hardware devices.
 
 
-* Current status / TODO
+* The application stack
 
-(Very) rough, (not at all) ready.  
+For a block diagram showing how things fit together, see
+[[http://www.defone.org/arch.html]]
 
-Next tasks: 
-- write text to the screen as a texture
-- make the touch event data drive the graphics being generated
-- chop up defone.core into separate namespaces
+Some notes on specific bits:
 
-** Stage 1 Infrastructure - crossbuild a chroot
+** The filesystem
 
 I've built a chroot with Debian in it and some make targets to get it
 onto my phone.  I have tested this works with CyanogenMod (which is
@@ -74,30 +71,40 @@ emulator runs.  I advise against trying to run it on the emulator
 unless you have a near-infinite amount of spare time to wait for it,
 though.  By which I mean to say, an actual phone will be much faster.
 
-    $ sudo -E make -C rootfs
+** Lisp environment
 
-on a Debian system, with your phone connected on USB.  This 
+The stage2 build copies /defone/defone/ onto the device.  This is a
+bog-standard clojure project created by "lein new"
 
-- creates a Debian chroot
-- install rsync on the phone with adb push
-- copies the chroot onto the phone
-- "ssh root@the-phone make -C /defone/stage2" - connect to the phone
-  and kick off the next stage
+To start it, run start.sh.  This brings up an nrepl server on port 
+9990 (  ✆ / U+2706 /Telephone Location Sign) - eventually we will
+autorun this and have it respawn on error, but not for as long as it
+has to fight Dalvik for RAM
 
-As with anything based on Make, it may not work.  
+It is a bit sucky having everything in one clojure project because it
+means bringing the whole platform down whenever we want to add another
+library - or whenever for any reason we get the JVM into a bad state
+and need to restart it.  Definitely a topic we will need to revisit.
 
-** Stage 2 infrastructure - native compilation
+*** Standalone hacking / TODO
 
-The stage2 build runs on the device itself. Although the Makefile that
-builds and installs the chroot is supposed to kick off a stage2 build,
-it currently fails due to some search path problem I haven't taken the
-time to figure out yet.  ssh into the phone then run
+It is a goal that we can develop directly on the device without being
+dependent on some other machine with an SDK/special software
+installed.  Since we have no plans currently to support programming without a
+keyboard, we will at least be dependent on being able to connect a
+keyboard or a device that has one attached.
 
-    # make -C /defone/stage2
+I'm not yet sure what this should look like.  I guess we want shell,
+repl, editor all exported via a web interface so we could point any
+browser at the phone and hack.  Bonus points if it was reattaching to
+an existing session instead of having to recreate context on each request.
 
-to restart it by hand
+Would we expect it to be better than emacs?  Would we expect it to be
+emacs?  Light table?
 
-*** graphics (Mesa) / working but slow
+
+** Graphics
+*** Mesa
 
 I spent a good while chasing down various rabbit holes in the hope of
 getting hw-accelerated GL on my particular phone (Galaxy Nexus).
@@ -142,39 +149,45 @@ Screen 0 Modes:
 0x01   720   1280   60.000  Current Mode
 #+END EXAMPLE
 
-*** JDK, Leiningen / installed
+*** Scene graph
 
-The stage2 build copies /defone/defone/ onto the device.  This is a
-bog-standard clojure project created by "lein new"
+We have drawn a rotating triangle using GLES via JNA.  This took
+longer than anticipated because anything involving FFI always takes
+longer than anticipated. 
 
-To start it, run start.sh.  This brings up an nrepl server on port 
-9990 (  ✆ / U+2706 /Telephone Location Sign) - eventually we will
-autorun this and have it respawn on error, but not for as long as it
-has to fight Dalvik for RAM
+We have a rudimentary scene graph in an atom and an opengl thread that
+gets woken up when the grah changes
 
-It is a bit sucky having everything in one clojure project because it
-means bringing the whole platform down whenever we want to add another
-library - or whenever for any reason we get the JVM into a bad state
-and need to restart it.  Definitely a topic we will need to revisit.
+defone.ui=> (swap! the-scene update-in [2 1] #(+ 0.05 %))
+;; rotate by 0.05 radians
 
-*** Standalone hacking / TODO
+*** Text rendering
 
-It is a goal that we can develop directly on the device without being
-dependent on some other machine with an SDK/special software
-installed.  Since we have no plans currently to support programming without a
-keyboard, we will at least be dependent on being able to connect a
-keyboard or a device that has one attached.
+To draw text we need to render it into a buffer using libfreetype,
+then apply that buffer as a texture.
 
-I'm not yet sure what this should look like.  I guess we want shell,
-repl, editor all exported via a web interface so we could point any
-browser at the phone and hack.  Bonus points if it was reattaching to
-an existing session instead of having to recreate context on each request.
+So far we have managed to render an image as a texture, and to get the
+bitmap for a single glyph from freetype.  Next is to 
 
-Would we expect it to be better than emacs?  Would we expect it to be
-emacs?  Light table?
+- figure out how to do a whole string
+- join the two libraies up
 
-** Application code
+*** Widgets
 
+What do we need?
+- buttons (emit events on some channel when pushed)
+- one-row-per-event table, connected to input channel
+- one-col-per-event tables?
+- x/y graphs, maybe
+
+Should UI widgets be able to reconfigure themselves dynamically
+(e.g. send a message to an x/y graph saying "now rescale and show y
+values up to 600") or is that state we'd be better off without and
+should the parent widget destroy and create afresh?
+
+
+
+** Input
 *** Touchscreen
 
 We have succeeded in opening the touchscreen device, getting bytes out
@@ -213,26 +226,31 @@ to have some concept of 'momentum' so that the app would tell the
 channel the weight of the object being flung and bigger UI elements
 would take correspondingly longer to slow down
 
-*** IP Networking
+
+** Networking (IP)
    
-Android handles this, mostly no need to get involved.  But we could
-use some way of updating resolv.conf when the network connectivity changes.
+Android handles this, mostly no need to get involved.  But 
 
-*** GPS
+- we could use some way of updating resolv.conf when the network
+  connectivity changes.
+- we install avahi so that we can appear magically on whatever
+  wireless network we attach to
 
-Not even looked at this yet, but I think it's part of RIL
+Some kind of channel interfaces that consume various network protocols
+will eventually be in evidence
 
-*** Telephony
+** Telephony
 
-RIL looks at least semi-documented.  Write some stuff to channelise it
+RIL is where this is at.  Channelised interface to it will be wanted
 
-*** Camera
+** Audio 
 
-Not looked at this yet either
+ALSA is standard Linux stuff.  Need to find out if channels are good
+for bulk audio data (maybe in 8k blocks or something) or if they
+would be best reserved for signalling and let the actual audio happen
+out of bound.
 
-
-** Apps and API
-*** data sources
+** Other data sources
 
 I see no reason not to use sqlite3 for local data providers as android
 does.  We can issue queries against the data source that return a
@@ -243,45 +261,30 @@ structured data we should be able to interpose a parser into the
 channel flow so that our consumer gets a json-style dictionary or an
 html element+kids or something meaningful like that on each read.
 
-*** Graphics
-
-We have drawn a rotating triangle using GLES via JNA.  This took
-longer than anticipated because anything involving FFI always takes
-longer than anticipated. 
-
-We have a rudimentary scene graph in an atom and an opengl thread that
-gets woken up when the grah changes
-
-defone.ui=> (swap! the-scene update-in [2 1] #(+ 0.05 %))
-;; rotate by 0.05 radians
-
-**** Text
-
-to draw text we need to render it into a buffer using libfreetype,
-then apply that buffer as a texture.
-
-So far we have managed to render an image as a texture, next bit is
-to do the call to freetype 
 
 
-**** Widgets
+* Building it
 
-What do we need?
-- buttons (emit events on some channel when pushed)
-- one-row-per-event table, connected to input channel
-- one-col-per-event tables?
-- x/y graphs, maybe
+    $ sudo -E make -C rootfs
 
-Should UI widgets be able to reconfigure themselves dynamically
-(e.g. send a message to an x/y graph saying "now rescale and show y
-values up to 600") or is that state we'd be better off without and
-should the parent widget destroy and create afresh?
+on a Debian system, with your phone connected on USB.  This 
+
+- creates a Debian chroot
+- install rsync on the phone with adb push
+- copies the chroot onto the phone
+- "ssh root@the-phone make -C /defone/stage2" - connect to the phone
+  and kick off the next stage
+
+As with anything based on Make, it may not work.  
+
+The stage2 build runs on the device itself. Although the Makefile that
+builds and installs the chroot is supposed to kick off a stage2 build,
+it currently fails due to some search path problem I haven't taken the
+time to figure out yet.  ssh into the phone then run
+
+    # make -C /defone/stage2
+
+to restart it by hand
 
 
-*** Audio IO
-
-ALSA is standard Linux stuff.  Need to find out if channels are good
-for bulk audio data (maybe in 8k blocks or something) or if they
-would be best reserved for signalling and let the actual audio happen
-out of bound.
 
