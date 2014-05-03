@@ -1,18 +1,197 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
-<head>
-<title>Architecture - (defone) - The Habitable Phone OS</title>
-</head>
-<body style="font-size: 18pt; font-family: sans-serif">
-  <h1>In outline</h1>
+  <head>
+    <link href="unsemantic-grid-responsive.css"
+	  rel="stylesheet" type="text/css" />
+    <style> div.box { 
+      text-align: center; margin: 0; padding-top: 10px;
+      height: 60px; vertical-align:	middle; 
+      border: 3px white solid; background-color: #3170A8;
+      background-image: -webkit-gradient(
+	linear,
+	right bottom,
+	left top,
+	color-stop(0, #3170A8),
+	color-stop(0.59, #4F92CA)
+      );
+      background-image: -o-linear-gradient(left top, #3170A8 0%, #4F92CA 59%);
+      background-image: -moz-linear-gradient(left top, #3170A8 0%, #4F92CA 59%);
+      background-image: -webkit-linear-gradient(left top, #3170A8 0%, #4F92CA 59%);
+      background-image: -ms-linear-gradient(left top, #3170A8 0%, #4F92CA 59%);
+      background-image: linear-gradient(to left top, #3170A8 0%, #4F92CA 59%);
+      }
+      div.blank { 
+	text-align: center; margin: 0; height: 60px;
+        padding: 5px; border: 3px white solid; background-color: white  
+      }
+      div.grid-container {
+        font-size: 14px;
+        font-family: sans-serif;
+      }
+      body {
+        font-size: 14pt; font-family: sans-serif
+      }
+      
+    </style>
+    <title>Architecture - (defone) - The Habitable Phone OS</title>
+  </head>
+  <body>
 
-Take an Android phone, install a proper Linux distribution and a
+    <h1>Architecture</h1>
+  
+  Take an Android phone, install a proper Linux distribution and a
 Clojure installation on it, then write/join up components using
-core.async.  Input will be from RIL and the internet and the kernel
-input layer, output will be via OpenGL(ES)
+  core.async.  Input will be from RIL and the internet and the kernel
+  input layer, output will be via OpenGL(ES)
 
-  <img src="arch.png" style="display: block;margin-top: 10pt;
-			     margin-left: auto; margin-right: auto;" />
-</div></body></html>
+    <h2>Obligatory block diagram</h2>
+  
+    <div class="grid-container">
+      
+      <div class="grid-10">
+	<div class="blank"></div>
+      </div>
+      <div class="grid-60">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Gesture recognizer</div>
+      </div>
+      <div class="grid-20">
+	<div class="blank"> </div>
+      </div>
+
+      <div class="grid-10">
+	<div class="blank">core.async</div>
+      </div>
+      <div class="grid-10">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-10">
+	<div class="box"> ? </div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Widgets</div>
+      </div>
+      <div class="grid-15">
+	<div class="box"> ? </div>
+      </div>
+      <div class="grid-5">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-10">
+	<div class="box"> ? </div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Input channels</div>
+      </div>
+      <div class="grid-20">
+	<div class="blank"> </div>
+      </div>
+      
+      <div class="grid-10">
+	<div class="blank">Clojure</div>
+      </div>
+      <div class="grid-10">
+	<div class="box"> ? </div>
+      </div>
+      <div class="grid-10">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Scene graph</div>
+      </div>
+      <div class="grid-40">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-20">
+	<div class="blank">+ leiningen, nrepl </div>
+      </div>
+      
+      <div class="grid-10">
+	<div class="blank">Debian</div>
+      </div>
+      <div class="grid-20">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Mesa +<br>Freetype</div>
+      </div>
+      <div class="grid-15">
+	<div class="box">Avahi</div>
+      </div>
+      <div class="grid-25">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-20">
+	<div class="blank">+ ssh, dbus </div>
+      </div>
+      
+      <div class="grid-10">
+	<div class="blank">Android</div>
+      </div>
+      <div class="grid-30">
+	<div class="blank"> </div>
+      </div>
+      <div class="grid-15">
+	<div class="box">Network</div>
+      </div>
+      <div class="grid-15">
+	<div class="box">RIL</div>
+      </div>
+      <div class="grid-30">
+	<div class="blank"> </div>
+      </div>
+
+      <div class="grid-10">
+	<div class="blank">Kernel</div>
+      </div>
+      <div class="grid-20">
+	<div class="box">ALSA</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">fb0</div>
+      </div>
+      <div class="grid-15">
+	<div class="box">net layer</div>
+      </div>
+      <div class="grid-15">
+	<div class="box">device drivers</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">input layer</div>
+      </div>
+      <div class="grid-20">
+	<div class="blank"> </div>
+      </div>
+
+      <div class="grid-10">
+	<div class="blank">Hardware</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">PCM</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Mixer</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Display</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Wifi<br/>radio</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">GSM</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">GPS</div>
+      </div>
+      <div class="grid-10">
+	<div class="box">Touchscreen</div>
+      </div>
+    </div>
+    
+  </body>
+</html>
