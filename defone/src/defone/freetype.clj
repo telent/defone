@@ -10,6 +10,8 @@
                         Integer FT_Load_Char
                         ])
 
+(def DPI 316)
+
 (defmacro checked [& args]
   `(let [ret# ~args]
      (assert (= ret# 0) (str "FT error " ret# " from " ~(first args)))))
@@ -73,8 +75,8 @@
 (def face-glyph-offset 84)
 (def glyph-bitmap-offset 76)
 
-(defn render-char [face size char]
-  (set-char-size face size 0 316 316)
+(defn bitmap-for-char [face size char]
+  (set-char-size face size 0 DPI DPI)
   (load-char face char)
   (let [glyph-slot (.getPointer face face-glyph-offset)]
     (bitmap-from-pointer (.share glyph-slot glyph-bitmap-offset))))
