@@ -5,6 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :repl-options {; :init-ns defone.core
                  :timeout 120000}
+  :plugins [[cider/cider-nrepl "0.6.0"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.nrepl "0.2.3"]
                  [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
