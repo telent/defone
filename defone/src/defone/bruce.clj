@@ -9,6 +9,17 @@
 ;;; C programs that refer to them and that produce output in some
 ;;; format that Clojure can understand
 
+;;; TODO
+
+;; clean up temporary files after use
+;; cope with unions as well as structs
+;; nested structs may some day be necessary
+;; write some kinda query api?
+;; split up namespaces so the `stat` data isn't here
+;; better fn names
+;; documentation never killed anyone
+;; deal with cflags/libs properly
+
 (def types-to-grovel (atom {}))
 
 (defn- canonize-member [options m]
