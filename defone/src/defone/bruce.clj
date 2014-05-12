@@ -19,6 +19,8 @@
 ;; better fn names
 ;; documentation never killed anyone
 ;; deal with cflags/libs properly
+;; obey the :compiler option
+;; implement aliases
 
 (def types-to-grovel (atom {}))
 
