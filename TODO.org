@@ -5,6 +5,12 @@ Maybe use a string->(seq of bitmap) function where each bitmap element
 has the data and the h width and whatever else, and our gl glue can
 consume it and copy each glyph into whatever texture it's using.
 
+It might be simpler just to write (render-text string render-char-cb)
+that calls render-char-cb for each bitmap generated.  Suspect that 
+the seq *might* allow us to be more flexible with linewrap though.
+Let's go with the easy route first though
+
+
 ** put bluetooth in arch diagram
 
 * Stuff to tidy up
