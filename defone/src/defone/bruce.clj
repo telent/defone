@@ -65,7 +65,7 @@
   (let [s (:record-name struct-spec)]
     (clojure.string/join
      "\n"
-     (map #(str "    printf(\"[" s " %s %d %d]\\n\", "
+     (map #(str "    printf(\"[" s " %s \" FMT_SIZE \" \" FMT_SIZE \"]\\n\", "
                 "\"" (first %) "\""
                 ", "
                 "offsetof(struct " s ", " (first %) ")"
@@ -74,12 +74,12 @@
                 ");")
           (:members struct-spec)))))
 
-
 (defn groveller-program [record-specs]
   (concat (map #(str "#include <" % ">")
-               (conj (headers-for record-specs) "stddef.h"))
+               (conj (headers-for record-specs) "stdio.h" "stddef.h"))
           [
            "#define member_sizeof(type, member) sizeof(((type *)0)->member)"
+           "#define FMT_SIZE \"%lu\""
            "int main() {"
            "    printf(\"[\");"
            ]
@@ -90,18 +90,19 @@
            "}"]))
 
 (defn grovel [record-specs]
-  (let [tmpnam (java.io.File/createTempFile "grovel_" ".c")
-        tmpout (java.io.File/createTempFile "grovel_" ".out")
+  (let [tmpfile (java.io.File/createTempFile "grovel_" ".c")
+        tmpout (str (.getPath tmpfile) ".out")
         cc-line (concat ["/usr/bin/gcc"
-                         "-o" (.getPath tmpout)
-                         (.getPath tmpnam)]
+                         "-o" tmpout
+                         (.getPath tmpfile)]
                         (distinct (filter identity
                                           (map #(get % :compiler-flags)
                                                (vals record-specs)))))]
-    (spit tmpnam (clojure.string/join "\n" (groveller-program record-specs)))
+    (spit tmpfile (clojure.string/join "\n" (groveller-program record-specs)))
+    (println cc-line)
     (let [cc (apply shell/sh cc-line)]
       (if (zero? (:exit cc))
-        (let [result (shell/sh (.getPath tmpout))]
+        (let [result (shell/sh tmpout)]
           (and (zero? (:exit result))
                (reduce (fn [m [record el size offset]]
                          (assoc-in m [record el] [size offset]))
