@@ -5,7 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :repl-options {; :init-ns defone.core
                  :timeout 120000}
-  :aot [defone.bruce]
+  :source-paths ["src/" "target/generated-src/"]
+  :prep-tasks [["grovel" "target/generated-src/defone/structs.clj"]]
   :plugins [[cider/cider-nrepl "0.6.0"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.nrepl "0.2.3"]
